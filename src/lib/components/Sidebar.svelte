@@ -14,7 +14,6 @@
 	import Users from '$lib/components/icon/Users.svelte';
 	import Clock from '$lib/components/icon/Clock.svelte';
 	import Workflow from '$lib/components/icon/Workflow.svelte';
-	import CreditCard from '$lib/components/icon/CreditCard.svelte';
 	import Settings from '$lib/components/icon/Settings.svelte';
 	import LogOut from '$lib/components/icon/LogOut.svelte';
 	import type { AccountRow } from '$lib/server/db/account-service';
@@ -225,11 +224,6 @@
 		<a href="/database/workflows" class="settings-row">
 			<Workflow size={15} />
 			ワークフロー
-		</a>
-
-		<a href="/bizcard" class="settings-row">
-			<CreditCard size={15} />
-			名刺取り込み
 		</a>
 
 		<a href="/settings" class="settings-row">
