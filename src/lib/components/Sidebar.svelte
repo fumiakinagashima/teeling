@@ -136,7 +136,7 @@
 
 <aside class="sidebar">
 	<div class="sidebar-header">
-		<span class="logo">MIDLETON</span>
+		<span class="logo">TEELING</span>
 	</div>
 
 	<a href="/" class="new-chat-row" onclick={() => chatSession.startNew()}>

@@ -3,7 +3,6 @@ import type { MessageParam } from '@anthropic-ai/sdk/resources/messages';
 import { eq } from 'drizzle-orm';
 import { buildSystemPrompt } from './prompt';
 import { tools as allTools, dispatchTool } from '$lib/server/mcp';
-import { entityTypes } from '$lib/server/db/schema';
 
 // メインチャットはSELECTのみ。create_* / update_* / delete_* はダイアログ経由でユーザーが実行する。
 const WRITE_TOOL_PREFIX = ['create_', 'update_', 'delete_'];
@@ -263,23 +262,6 @@ export async function streamChat(
 			const ent = RECORD_LIST_TOOL_ENTITY[b.name];
 			if (ent) turnEntities.add(ent);
 		}
-		// get_entities はカスタムテーブル名（entity_type_id → name）を DB から解決して補完する
-		await Promise.all(
-			toolBlocks
-				.filter((b) => b.name === 'get_entities')
-				.map(async (b) => {
-					try {
-						const input = JSON.parse(b.inputJson || '{}') as { entity_type_id?: string };
-						if (input.entity_type_id) {
-							const [et] = await db
-								.select({ name: entityTypes.name })
-								.from(entityTypes)
-								.where(eq(entityTypes.id, input.entity_type_id));
-							if (et?.name) turnEntities.add(et.name);
-						}
-					} catch { /* ignore */ }
-				})
-		);
 		// hintEntity を更新: 単一ならその entity、複数なら ambiguous で undefined、ゼロなら維持
 		if (turnEntities.size === 1) {
 			hintEntity = [...turnEntities][0];

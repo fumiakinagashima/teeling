@@ -25,7 +25,7 @@ const getHelpInputSchema = z.object({
 
 const HELP: Record<string, object> = {
 	overview: {
-		title: 'Midleton 使い方ガイド',
+		title: 'Teeling 使い方ガイド',
 		description: 'チャットで業務指示を出すだけで、顧客管理・案件管理・資料作成・申請管理などが完結するAIファーストなCRM/SFAシステムです',
 		features: [
 			{ name: '顧客・担当者管理', topic: 'customers', examples: ['〇〇株式会社を登録して', '田中さんの会社を探して', '名刺を読み取って登録したい'] },
