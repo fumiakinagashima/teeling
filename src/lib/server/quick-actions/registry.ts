@@ -84,26 +84,6 @@ const handlers: Record<QuickActionId, QuickActionHandler> = {
 		}
 	},
 
-	list_workflows: {
-		tool: 'list_workflows',
-		input: {},
-		format: (result) => {
-			const r = result as { workflows: { id: string; name: string; enabled: boolean }[] };
-			return [{
-				type: 'table',
-				columns: [
-					{ key: 'name', label: 'ワークフロー名' },
-					{ key: 'enabled', label: '有効' }
-				],
-				rows: r.workflows.map((w) => ({
-					id: w.id,
-					name: w.name,
-					enabled: w.enabled ? '有効' : '無効'
-				}))
-			}];
-		}
-	},
-
 	create_approval: {
 		contents: [{
 			type: 'form',

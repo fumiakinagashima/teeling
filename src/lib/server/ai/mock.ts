@@ -56,13 +56,6 @@ const MOCK_RESPONSES: MessageContent[][] = [
 			]
 		}
 	],
-	[
-		{ type: 'text', text: '名刺を読み取ります。カメラで撮影するか、画像をアップロードしてください。' },
-		{
-			type: 'bizcard',
-			title: '名刺を読み取ってください'
-		}
-	]
 ];
 
 let mockIndex = 0;

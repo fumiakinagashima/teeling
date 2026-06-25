@@ -5,7 +5,6 @@ import * as communication from './communication';
 import * as documents from './documents';
 import * as approvals from './approvals';
 import * as help from './help';
-import * as workflows from './workflows';
 
 export type { ToolEnv } from './shared';
 
@@ -29,18 +28,14 @@ export type ToolName =
 	| 'create_approval'
 	| 'update_approval_step'
 	| 'cancel_approval'
-	| 'get_help'
-	| 'save_workflow'
-	| 'list_workflows'
-	| 'get_workflow';
+	| 'get_help';
 
 export const tools: Tool[] = [
 	...integrations.tools,
 	...communication.tools,
 	...documents.tools,
 	...approvals.tools,
-	...help.tools,
-	...workflows.tools
+	...help.tools
 ];
 
 export async function dispatchTool(
@@ -71,9 +66,6 @@ export async function dispatchTool(
 		case 'update_approval_step':           return approvals.handleUpdateApprovalStep(db, input, env);
 		case 'cancel_approval':                return approvals.handleCancelApproval(db, input);
 		case 'get_help':                       return help.handleGetHelp(input);
-		case 'save_workflow':                  return workflows.handleSaveWorkflow(db, input, env);
-		case 'list_workflows':                 return workflows.handleListWorkflows(db, env);
-		case 'get_workflow':                   return workflows.handleGetWorkflow(db, input, env);
 		default:
 			throw new Error(`Unknown tool: ${name}`);
 	}

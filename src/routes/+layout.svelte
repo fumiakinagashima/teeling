@@ -5,14 +5,12 @@
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import { themeStore } from '$lib/stores/theme.svelte';
 	import { notificationCenter } from '$lib/stores/notifications.svelte';
-	import { chatHistory } from '$lib/stores/chat-history.svelte';
 	import { untrack } from 'svelte';
 	import { NOTIFICATION_POLL_INTERVAL_MS } from '$lib/constants';
 
 	let { data, children } = $props();
 
 	notificationCenter.unreadCount = untrack(() => data.unreadNotificationCount);
-	chatHistory.seed(untrack(() => data.chats));
 
 	$effect(() => {
 		const root = document.documentElement;

@@ -11,7 +11,7 @@ export const tools: Tool[] = [
 			properties: {
 				topic: {
 					type: 'string',
-					enum: ['overview', 'approvals', 'workflows', 'reminders', 'documents', 'email'],
+					enum: ['overview', 'approvals', 'reminders', 'documents', 'email'],
 					description: '知りたいトピック（省略時は全体概要）'
 				}
 			}
@@ -20,7 +20,7 @@ export const tools: Tool[] = [
 ];
 
 const getHelpInputSchema = z.object({
-	topic: z.enum(['overview', 'approvals', 'workflows', 'reminders', 'documents', 'email']).optional()
+	topic: z.enum(['overview', 'approvals', 'reminders', 'documents', 'email']).optional()
 });
 
 const HELP: Record<string, object> = {
@@ -29,7 +29,6 @@ const HELP: Record<string, object> = {
 		description: 'AIと相談しながら申請書を作成・レビューし、承認者がすばやく判断できる申請管理システムです',
 		features: [
 			{ name: '申請作成・レビュー', topic: 'approvals', examples: ['出張費用の申請を作って', '承認待ちの申請は？', 'この申請のROIを計算して'] },
-			{ name: 'ワークフロー自動化', topic: 'workflows', examples: ['毎朝9時に承認待ち申請をサマリーして通知して'] },
 			{ name: 'リマインダー', topic: 'reminders', examples: ['明日の10時に申請期限をリマインドして'] },
 			{ name: '資料生成（Word/Excel/PowerPoint）', topic: 'documents', examples: ['承認済み案件をExcelにまとめて'] },
 			{ name: 'メール送信', topic: 'email', examples: ['申請者に結果を通知するメールを送って'] }
@@ -37,12 +36,10 @@ const HELP: Record<string, object> = {
 		tips: [
 			'自然な日本語で指示するだけでOKです',
 			'申請内容に費用と予測売上があれば「ROIを計算して」と頼めます',
-			'データ管理・ワークフロー設定はサイドメニューから直接操作できます',
-			'申請の承認・否決はデータ管理の申請管理画面から行えます'
+			'申請の承認・否決は申請詳細画面から行えます'
 		],
 		relatedPages: [
-			{ label: '申請管理', href: '/database/approvals', description: '申請の一覧確認・承認・否決ができます' },
-			{ label: 'ワークフロー', href: '/database/workflows', description: '自動通知・集計ワークフローを設定できます' },
+			{ label: '申請一覧', href: '/', description: '申請の確認・承認・否決ができます' },
 			{ label: '設定', href: '/settings', description: 'アプリの各種設定を変更できます' }
 		]
 	},
@@ -53,33 +50,17 @@ const HELP: Record<string, object> = {
 			{ action: '申請を作成する', examples: ['出張費用10万円の申請を作って', '〇〇の承認申請を出したい'] },
 			{ action: 'AIに申請内容をレビューしてもらう', examples: ['この申請の問題点を指摘して', '申請書の改善点を教えて'] },
 			{ action: '判断材料を生成してもらう', examples: ['この申請のROIを計算して', '費用対効果を分析して', 'リスク評価をして'] },
-			{ action: '申請一覧・状況を確認する', examples: ['承認待ちの申請は？', '今月の申請件数は？', '自分が審査待ちの申請を教えて'] },
-			{ action: '申請を承認・否決する', examples: ['〇〇の申請を承認して', '〇〇申請のステップ1を却下して'] },
+			{ action: '申請一覧・状況を確認する', examples: ['承認待ちの申請は？', '今月の申請件数は？'] },
+			{ action: '申請を承認・否決する', examples: ['〇〇の申請を承認して', '〇〇申請を却下して'] },
 			{ action: '申請を取り消す', examples: ['〇〇の申請を取り消して'] }
 		],
 		tips: [
 			'承認ルートは複数ステップ・並列承認に対応しています',
 			'申請データに費用・予測売上・期間などを含めると判断材料の精度が上がります',
-			'AIレビューは申請一覧の詳細ダイアログからも実行できます'
+			'AIレビューは申請詳細画面からも実行できます'
 		],
 		relatedPages: [
-			{ label: '申請管理', href: '/database/approvals', description: '申請の詳細確認・承認・否決操作ができます' }
-		]
-	},
-	workflows: {
-		title: 'ワークフロー自動化',
-		description: '毎日決まった時刻に自動実行する処理（通知・集計・レポート）を設定できます',
-		operations: [
-			{ action: '毎朝の承認待ちサマリーを設定する', examples: ['毎朝9時に承認待ち申請を集計して通知して'] },
-			{ action: '期限リマインダーを自動化する', examples: ['毎日18時に未完了の申請を担当者にメールして'] },
-			{ action: 'ワークフロー一覧を確認する', examples: ['どんなワークフローが設定されてる？'] }
-		],
-		tips: [
-			'AIと会話しながらワークフローの設計・修正ができます',
-			'ワークフロー作成・編集はワークフロー管理画面からも直接操作できます'
-		],
-		relatedPages: [
-			{ label: 'ワークフロー', href: '/database/workflows', description: 'ワークフローの作成・編集・有効化ができます' }
+			{ label: '申請一覧', href: '/', description: '申請の詳細確認・承認・否決操作ができます' }
 		]
 	},
 	reminders: {
@@ -93,7 +74,6 @@ const HELP: Record<string, object> = {
 			'Slack通知は外部API連携画面でWebhook URLの設定が必要です'
 		],
 		relatedPages: [
-			{ label: 'リマインダー管理', href: '/database/reminders', description: '登録済みリマインダーの確認・削除ができます' },
 			{ label: '外部API連携', href: '/settings/integrations', description: 'Slack Webhook URLの設定ができます' }
 		]
 	},

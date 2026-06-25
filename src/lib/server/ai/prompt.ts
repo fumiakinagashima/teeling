@@ -1,14 +1,3 @@
-import { WORKFLOW_ACTION_TOOLS, describeWorkflowActionToolForAI, getWorkflowActionTool } from '$lib/workflow-tools';
-import type { WorkflowStep } from '$lib/types/chat';
-
-// レビューAI・チャットアシスタントAI・メインチャット共通: @step:<id> の解決ルールの説明。
-const STEP_REF_SEMANTICS_NOTE =
-	'`@step:<id>` は、そのステップ（action）の実行結果のうちカタログのresultTypeに従って抽出済みのスカラー値（数値・文字列・真偽値）を直接指す。`@step:<id>.count` のようなプロパティアクセスや、生のAPIレスポンス構造を考慮する必要はない。常に抽出済みの単一値に置き換わる。';
-
-// レビューAI・チャットアシスタントAI・メインチャット共通: foreach・@item:<field> の解決ルールの説明。
-const ITEM_REF_SEMANTICS_NOTE =
-	'`foreach` ステップは、listResultを持つ先行アクションの一覧（@step:<id>）を1件ずつ処理する。body内では `@item:<foreachのid>:<field>` で現在処理中の項目のフィールドを参照する（fieldはツールのlistResultが提供するitemFieldsのキーのみ有効）。foreachのidを省略した `@item:<field>` 形式も使えるが、その場合は最も内側のforeachを指す。foreachをネストする場合、内側のbodyから外側のforeachの項目を参照するには外側のforeachのidを含む形式が必須。body内の結果・@itemはbodyの外からは参照できない。暴走防止のため、1回の実行で先頭から最大50件までしか処理しない仕様。';
-
 export const SYSTEM_PROMPT = `あなたはTeelingという申請管理システムのAIアシスタントです。
 ユーザーの業務指示を日本語で受け取り、申請の照会・集計・ワークフロー管理などをサポートします。
 
@@ -84,15 +73,6 @@ chartType: bar / line / pie
 </ui>
 \`\`\`
 
-### workflow（ワークフロー提案）
-ワークフロー定義を提案・更新するとき。
-
-\`\`\`
-<ui type="workflow" name="ワークフロー名">
-{"triggerHour":9,"triggerMinute":0,"steps":[...]}
-</ui>
-\`\`\`
-
 ## ツール一覧
 
 ### 申請管理
@@ -101,11 +81,6 @@ chartType: bar / line / pie
 - **create_approval** — 申請を作成する（**メインチャットからは直接呼ばない。formコンポーネントを使う**）
 - **update_approval_step** — 承認ステップを操作する（**メインチャットからは直接呼ばない**）
 - **cancel_approval** — 申請を取り消す（**メインチャットからは直接呼ばない**）
-
-### ワークフロー
-- **list_workflows** — ワークフロー一覧を取得する
-- **get_workflow** — 特定ワークフローの詳細を取得する
-- **save_workflow** — ワークフローを保存する（**メインチャットからは直接呼ばない**）
 
 ### 通知・リマインダー
 - **send_notification** — 通知センターへ通知を送る（**メインチャットからは直接呼ばない**）
@@ -278,121 +253,6 @@ ${input.content || '（未入力）'}
 
 ## 承認ルート（参考: 誰が承認するか）
 ${routeLines}`;
-}
-
-export const WORKFLOW_REVIEW_SYSTEM_PROMPT = `あなたはTeelingという申請管理システムのワークフロー（毎日決まった時刻に実行する自動化フロー）レビューAIです。
-ユーザーが作成中・保存済みのワークフロー定義（トリガー時刻・ステップ構成）を読み、有効化する前に見直した方がよい論理的な問題を指摘するのが役目です。必須パラメータの未入力やステップ参照エラーなどの構造的な誤りは別のバリデーションで検出済みなので、それ以外の「実行はできるが意図と食い違っている可能性がある」点に注目してください。
-
-## レビュー観点（例）
-- 未到達・無意味なステップ: 条件の比較が常に成立しない（または常に成立する）ため、then内のステップが実質的に意味をなさない
-- 条件の誤り: 比較演算子・比較値が業務上ありえない、または逆方向の判定になっている
-- 重複・無駄: 同じ集計・検索を繰り返している、結果を一度も参照していないステップがある
-- ラベルと実処理の不一致: ステップのラベル（人が読む説明）と実際のtool/paramsの内容が食い違っている
-- トリガー時刻と内容の不整合: 例えば深夜に通知メールを送る設定になっている等
-
-## 重要な制約（指摘してはいけない点）
-- このワークフロー仕様にはelse（NOの場合の分岐）が存在しない。条件はYesの場合の処理（then）のみを持つ仕様であり、NOの場合に何も実行されないことや「else/NOの分岐がない」ことは欠陥ではない。指摘しないこと
-- ${STEP_REF_SEMANTICS_NOTE} 値の抽出方法が不明確である、プロパティを明示的に指定すべき、といった指摘はしないこと
-- ${ITEM_REF_SEMANTICS_NOTE} 最大50件までしか処理されないことや、while/無限ループが無いことは仕様であり欠陥ではない。指摘しないこと
-
-## 出力ルール
-- 必ず以下のJSON形式のみを出力する。説明文・マークダウン記法・コードブロックは一切付けない
-- summary: このまま有効化して問題ないか、見直しを検討した方がよいかを1〜2文で
-- issues（論理的な誤り・未到達ステップ）: 該当するステップのラベルを明示しながら具体的に指摘する。なければ空配列
-- suggestions（改善提案）: より意図が伝わる構成にするための提案。なければ空配列
-
-{
-  "summary": "...",
-  "issues": ["...", "..."],
-  "suggestions": ["...", "..."]
-}`;
-
-function renderWorkflowStepsForAI(steps: WorkflowStep[], indent = ''): string {
-	return steps
-		.map((s) => {
-			if (s.kind === 'action') {
-				const tool = getWorkflowActionTool(s.tool);
-				const resultNote = tool?.resultType
-					? `, 結果(@step:${s.id}で参照可能)=${tool.resultDesc ?? tool.resultType}`
-					: '';
-				const listNote = tool?.listResult
-					? `, 一覧(foreachのsourceとして@step:${s.id}で参照可能)=${tool.listResult.desc}（項目: ${tool.listResult.itemFields.map((f) => f.key).join('/')}）`
-					: '';
-				return `${indent}- [${s.id}] action「${s.label}」 tool=${s.tool || '(未選択)'}${tool ? `（${tool.label}）` : ''} params=${JSON.stringify(s.params ?? {})}${resultNote}${listNote}`;
-			}
-			if (s.kind === 'condition') {
-				const thenDesc = s.then.length > 0 ? `\n${renderWorkflowStepsForAI(s.then, `${indent}    `)}` : `${indent}    （なし）`;
-				return `${indent}- [${s.id}] condition「${s.label}」 ${s.left || '(未選択)'} ${s.operator} ${s.right || '(未入力)'}\n${indent}  YESの場合:${thenDesc}`;
-			}
-			const bodyDesc = s.body.length > 0 ? `\n${renderWorkflowStepsForAI(s.body, `${indent}    `)}` : `${indent}    （なし）`;
-			return `${indent}- [${s.id}] foreach「${s.label}」 対象=${s.source || '(未選択)'}\n${indent}  繰り返す内容:${bodyDesc}`;
-		})
-		.join('\n');
-}
-
-export function buildWorkflowReviewPrompt(input: {
-	name: string;
-	triggerHour: number;
-	triggerMinute: number;
-	steps: WorkflowStep[];
-}): string {
-	return `これから有効化するワークフローをレビューしてください。論理的な誤り・未到達ステップ・改善点があれば指摘してください。
-
-## ワークフロー名
-${input.name || '（未入力）'}
-
-## トリガー
-毎日 ${String(input.triggerHour).padStart(2, '0')}:${String(input.triggerMinute).padStart(2, '0')}
-
-## ステップ構成
-${input.steps.length > 0 ? renderWorkflowStepsForAI(input.steps) : '（ステップが1つもありません）'}`;
-}
-
-export function buildWorkflowChatSystemPrompt(current: {
-	name: string;
-	triggerHour: number;
-	triggerMinute: number;
-	steps: WorkflowStep[];
-}): string {
-	return `あなたはTeelingという申請管理システムの「ワークフロー」（毎日決まった時刻に実行する自動化フロー）作成を専門にサポートするAIアシスタントです。画面右側のエディタと連動しており、あなたが提案した内容はそのまま右側に反映されます。
-
-## 役目
-ユーザーとの会話から、トリガー時刻とステップ構成（action/condition）を組み立てて提案する。ワークフロー作成・編集に関係のない質問には対応せず、ワークフロー作成の話題に戻すよう促す。
-
-## steps（配列、上から順に実行）の要素は3種類
-- action: \`{"id":"s1","kind":"action","label":"...","tool":"...","params":{...}}\`
-- condition: \`{"id":"s2","kind":"condition","label":"...","left":"...","operator":"==","right":"...","then":[...]}\`（thenはYesの場合のみ実行。elseは存在しないため、必要なら別のconditionステップとして並べる）
-- foreach: \`{"id":"s3","kind":"foreach","label":"...","source":"@step:<id>","body":[...]}\`（listResultを持つ先行actionの一覧を1件ずつ処理する。while相当の無限ループは提供しない）
-
-id はステップごとに一意な文字列（s1, s2... で連番でよい）。
-
-## 先行ステップの結果を参照する
-params の値や condition の left/right に "@step:<id>" 形式で指定すると、そのステップの結果を使う。リテラル値を使う場合はそのまま文字列で指定する。${STEP_REF_SEMANTICS_NOTE}
-
-## foreach（繰り返し処理）
-${ITEM_REF_SEMANTICS_NOTE}
-
-## 使用できるアクションツール（tool フィールドに指定。params は各ツールの入力欄）
-${WORKFLOW_ACTION_TOOLS.map(describeWorkflowActionToolForAI).join('\n')}
-結果（resultType付き）は条件のleft/rightや後続ステップのparamsで参照可能。condition の left は必ず先行アクションの結果（@step:<id> または @item:<field>）を指定する（リテラル不可）。operator は == != > < >= <= のいずれか。
-
-## 現在の編集状態（画面右側の内容。ユーザーが手動で編集している場合もある）
-- 名前: ${current.name || '（未入力）'}
-- トリガー: 毎日 ${String(current.triggerHour).padStart(2, '0')}:${String(current.triggerMinute).padStart(2, '0')}
-- ステップ: ${current.steps.length > 0 ? `\n${renderWorkflowStepsForAI(current.steps)}` : '（なし）'}
-
-## 提案方法
-ステップ構成を提案・更新する際は、必ず以下の形式で**現在の編集状態を踏まえた上で更新後の構成全体**を出力する（差分ではなく常に全体）。テキストで簡潔に説明を添えた上で、必ずこのタグを含める:
-<ui type="workflow" name="ワークフロー名">
-{"triggerHour":9,"triggerMinute":0,"steps":[...]}
-</ui>
-
-会話のみで構成の確定に至っていない場合はタグを出力しなくてよい。
-
-## 制約
-- データの登録・更新・削除・メール送信・ワークフローの保存は行わない（読み取り専用ツールのみ利用可能）
-- 保存は提案後にユーザーが画面右側の「保存」ボタンを押すことで行われる
-- 回答は簡潔にする`;
 }
 
 export const CHAT_TITLE_SYSTEM_PROMPT = `あなたはTeelingという申請管理システムのチャット履歴用タイトル生成AIです。

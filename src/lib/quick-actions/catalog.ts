@@ -1,7 +1,6 @@
 export type QuickActionId =
 	| 'list_approvals'
 	| 'list_approvals_pending'
-	| 'list_workflows'
 	| 'create_approval'
 	| 'create_reminder';
 
@@ -24,12 +23,6 @@ export const quickActionCatalog: QuickActionDef[] = [
 		label: '承認待ち一覧',
 		description: '承認待ちの申請を表示します',
 		icon: 'clock'
-	},
-	{
-		id: 'list_workflows',
-		label: 'ワークフロー一覧',
-		description: '登録済みワークフローを表示します',
-		icon: 'workflow'
 	},
 	{
 		id: 'create_approval',
