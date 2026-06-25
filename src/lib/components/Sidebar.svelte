@@ -6,7 +6,6 @@
 	import Bell from '$lib/components/icon/Bell.svelte';
 	import ClipboardCheck from '$lib/components/icon/ClipboardCheck.svelte';
 	import Users from '$lib/components/icon/Users.svelte';
-	import Workflow from '$lib/components/icon/Workflow.svelte';
 	import Settings from '$lib/components/icon/Settings.svelte';
 	import LogOut from '$lib/components/icon/LogOut.svelte';
 	import type { AccountRow } from '$lib/server/db/account-service';
@@ -46,16 +45,6 @@
 			<ClipboardCheck size={15} />
 			申請一覧
 		</a>
-		<a href="/database/workflows" class="nav-item" class:active={isActive('/database/workflows')}>
-			<Workflow size={15} />
-			ワークフロー
-		</a>
-		{#if account.permission === 'admin'}
-			<a href="/database/accounts" class="nav-item" class:active={isActive('/database/accounts')}>
-				<Users size={15} />
-				アカウント
-			</a>
-		{/if}
 	</nav>
 
 	<div class="sidebar-footer">
@@ -66,6 +55,13 @@
 				<span class="notification-badge">{formatBadgeCount(notificationCenter.unreadCount)}</span>
 			{/if}
 		</button>
+
+		{#if account.permission === 'admin'}
+			<a href="/database/accounts" class="footer-item" class:active={isActive('/database/accounts')}>
+				<Users size={15} />
+				アカウント
+			</a>
+		{/if}
 
 		<a href="/settings" class="footer-item" class:active={isActive('/settings')}>
 			<Settings size={15} />
