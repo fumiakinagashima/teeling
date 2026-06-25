@@ -64,7 +64,7 @@ export const approvalRequests = sqliteTable('approval_requests', {
 	type: text('type').notNull(),
 	entityType: text('entity_type'),
 	entityId: text('entity_id'),
-	status: text('status', { enum: ['pending', 'approved', 'rejected', 'cancelled'] })
+	status: text('status', { enum: ['draft', 'pending', 'approved', 'rejected', 'cancelled'] })
 		.notNull()
 		.default('pending'),
 	submittedBy: text('submitted_by').notNull().default(''),

@@ -4,19 +4,13 @@ import Anthropic from '@anthropic-ai/sdk';
 import { env } from '$env/dynamic/private';
 import { createDb } from '$lib/server/db';
 import { getApproval } from '$lib/server/db/approval-service';
-import { METRICS_SYSTEM_PROMPT, buildMetricsPrompt } from '$lib/server/ai/approval-metrics';
+import {
+	ANALYSIS_SYSTEM_PROMPT,
+	buildAnalysisPrompt,
+	type ApprovalAnalysisResult
+} from '$lib/server/ai/approval-analysis';
 
-export type ApprovalMetricsResult = {
-	summary: string;
-	keyFigures: { label: string; value: string; quote?: string }[];
-	roi: string | null;
-	roiFormula: string | null;
-	paybackPeriod: string | null;
-	paybackFormula: string | null;
-	riskPoints: string[];
-	dataQuality: 'low' | 'medium' | 'high';
-	missingData: string[];
-};
+export type { ApprovalAnalysisResult } from '$lib/server/ai/approval-analysis';
 
 export const POST: RequestHandler = async ({ params, platform }) => {
 	if (!platform?.env?.DB) return json({ error: 'DB not available' }, { status: 500 });
@@ -32,9 +26,9 @@ export const POST: RequestHandler = async ({ params, platform }) => {
 	try {
 		const message = await anthropic.messages.create({
 			model: 'claude-haiku-4-5-20251001',
-			max_tokens: 1024,
-			system: METRICS_SYSTEM_PROMPT,
-			messages: [{ role: 'user', content: buildMetricsPrompt(row) }]
+			max_tokens: 1500,
+			system: ANALYSIS_SYSTEM_PROMPT,
+			messages: [{ role: 'user', content: buildAnalysisPrompt(row) }]
 		});
 		text = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '';
 	} catch (e) {
@@ -48,7 +42,7 @@ export const POST: RequestHandler = async ({ params, platform }) => {
 	}
 
 	try {
-		const result = JSON.parse(jsonMatch[0]) as ApprovalMetricsResult;
+		const result = JSON.parse(jsonMatch[0]) as ApprovalAnalysisResult;
 		return json(result);
 	} catch {
 		return json({ error: '解析に失敗しました。' }, { status: 500 });

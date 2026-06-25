@@ -5,7 +5,10 @@ import {
 	getApproval,
 	updateApprovalStep,
 	cancelApproval,
-	deleteApproval
+	deleteApproval,
+	returnApproval,
+	saveDraftApproval,
+	updateApprovalContent
 } from '$lib/server/db/approval-service';
 
 export const GET: RequestHandler = async ({ params, platform }) => {
@@ -20,10 +23,14 @@ export const PATCH: RequestHandler = async ({ params, request, platform, locals 
 	if (!platform?.env?.DB) return json({ error: 'DB not available' }, { status: 500 });
 	const db = createDb(platform.env.DB);
 	try {
+		type RouteEntry = { step: number; accountId?: string; approver: string; email?: string; role?: string };
 		const body = await request.json() as {
-			action?: 'approve_step' | 'reject_step' | 'cancel';
+			action?: 'approve_step' | 'reject_step' | 'cancel' | 'return' | 'save_draft' | 'resubmit';
 			step?: number;
 			comment?: string;
+			title?: string;
+			content?: string;
+			route?: RouteEntry[];
 		};
 		let row;
 		if (body.action === 'approve_step' || body.action === 'reject_step') {
@@ -36,6 +43,12 @@ export const PATCH: RequestHandler = async ({ params, request, platform, locals 
 			);
 		} else if (body.action === 'cancel') {
 			row = await cancelApproval(db, params.id);
+		} else if (body.action === 'return') {
+			row = await returnApproval(db, params.id, body.comment);
+		} else if (body.action === 'save_draft') {
+			row = await saveDraftApproval(db, params.id, { title: body.title, content: body.content, route: body.route });
+		} else if (body.action === 'resubmit') {
+			row = await updateApprovalContent(db, params.id, { title: body.title, content: body.content, route: body.route });
 		} else {
 			return json({ error: 'Invalid action' }, { status: 400 });
 		}

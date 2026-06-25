@@ -1,16 +1,18 @@
 <script lang="ts">
-	import type { Attachment } from '$lib/server/db/approval-service';
+	import type { Attachment, ApprovalRow } from '$lib/server/db/approval-service';
 	import type { ApprovalDraftReviewResult } from '../../../routes/api/approvals/ai-review-draft/+server';
 	import type { AccountRow } from '$lib/server/db/account-service';
 	import { toast } from '$lib/stores/toast.svelte';
 
 	type Props = {
 		accountOptions: AccountRow[];
+		editRow?: ApprovalRow;
 		onCreated?: (id: string) => void;
+		onSaved?: (id: string) => void;
 		oncancel?: () => void;
 	};
 
-	let { accountOptions, onCreated, oncancel }: Props = $props();
+	let { accountOptions, editRow, onCreated, onSaved, oncancel }: Props = $props();
 
 	const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10MB
 
@@ -22,11 +24,19 @@
 		role: string;
 	};
 
-	let title = $state('');
-	let content = $state('');
-	let routeEntries = $state<RouteEntry[]>([
-		{ step: 1, accountId: '', approver: '', email: '', role: '' }
-	]);
+	let title = $state(editRow?.title ?? '');
+	let content = $state(editRow?.content ?? '');
+	let routeEntries = $state<RouteEntry[]>(
+		editRow && editRow.route.length > 0
+			? editRow.route.map(s => ({
+				step: s.step,
+				accountId: s.accountId ?? '',
+				approver: s.approver,
+				email: s.email ?? '',
+				role: s.role ?? ''
+			}))
+			: [{ step: 1, accountId: '', approver: '', email: '', role: '' }]
+	);
 	// Files are uploaded to R2 on submit; this holds pending File objects before upload
 	let pendingFiles = $state<File[]>([]);
 
@@ -48,6 +58,7 @@
 	}
 
 	let saving = $state(false);
+	let draftSaving = $state(false);
 	let error = $state('');
 	let fileError = $state('');
 
@@ -137,47 +148,93 @@
 		return results;
 	}
 
+	function buildRoute() {
+		return routeEntries.filter(r => r.approver.trim()).map(r => ({
+			step: r.step,
+			accountId: r.accountId || undefined,
+			approver: r.approver.trim(),
+			email: r.email.trim() || undefined,
+			role: r.role.trim() || undefined
+		}));
+	}
+
+	async function getAttachments(): Promise<Attachment[] | false> {
+		if (pendingFiles.length === 0) return [];
+		try {
+			return await uploadFiles();
+		} catch (e) {
+			error = `ファイルのアップロードに失敗しました: ${e instanceof Error ? e.message : String(e)}`;
+			return false;
+		}
+	}
+
+	async function saveDraft() {
+		if (!title.trim()) { error = 'タイトルは必須です。'; return; }
+		draftSaving = true;
+		error = '';
+		try {
+			const attachments = await getAttachments();
+			if (attachments === false) return;
+
+			if (editRow) {
+				const res = await fetch(`/api/approvals/${editRow.id}`, {
+					method: 'PATCH',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ action: 'save_draft', title: title.trim(), content: content.trim() || undefined, route: buildRoute() })
+				});
+				if (!res.ok) { const e = await res.json() as { error: string }; error = e.error; return; }
+				const row = await res.json() as { id: string };
+				toast.success('下書きを保存しました');
+				onSaved?.(row.id);
+			} else {
+				const res = await fetch('/api/approvals', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ title: title.trim(), content: content.trim() || undefined, attachments, status: 'draft', route: buildRoute() })
+				});
+				if (!res.ok) { const e = await res.json() as { error: string }; error = e.error; return; }
+				const row = await res.json() as { id: string };
+				toast.success('下書きを保存しました');
+				onCreated?.(row.id);
+			}
+		} finally {
+			draftSaving = false;
+		}
+	}
+
 	async function submit() {
 		if (!title.trim()) { error = 'タイトルは必須です。'; return; }
+		if (!routeEntries.some(r => r.approver.trim())) { error = '承認者を1名以上設定してください。'; return; }
 		if (routeEntries.some(r => !r.approver.trim())) { error = '承認者名をすべて入力してください。'; return; }
+		if (!confirm('申請すると内容の修正ができなくなります。\nよろしいですか？')) return;
 
 		saving = true;
 		error = '';
 		try {
-			let attachments: Attachment[] = [];
-			if (pendingFiles.length > 0) {
-				try {
-					attachments = await uploadFiles();
-				} catch (e) {
-					error = `ファイルのアップロードに失敗しました: ${e instanceof Error ? e.message : String(e)}`;
-					return;
-				}
-			}
+			const attachments = await getAttachments();
+			if (attachments === false) return;
 
-			const res = await fetch('/api/approvals', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					title: title.trim(),
-					content: content.trim() || undefined,
-					attachments,
-					route: routeEntries.map(r => ({
-						step: r.step,
-						accountId: r.accountId || undefined,
-						approver: r.approver.trim(),
-						email: r.email.trim() || undefined,
-						role: r.role.trim() || undefined
-					}))
-				})
-			});
-			if (!res.ok) {
-				const e = await res.json() as { error: string };
-				error = e.error;
-				return;
+			if (editRow) {
+				const res = await fetch(`/api/approvals/${editRow.id}`, {
+					method: 'PATCH',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ action: 'resubmit', title: title.trim(), content: content.trim() || undefined, route: buildRoute() })
+				});
+				if (!res.ok) { const e = await res.json() as { error: string }; error = e.error; return; }
+				const row = await res.json() as { id: string };
+				toast.success('申請しました');
+				onSaved?.(row.id);
+			} else {
+				const res = await fetch('/api/approvals', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ title: title.trim(), content: content.trim() || undefined, attachments, status: 'pending', route: buildRoute() })
+				});
+				if (!res.ok) { const e = await res.json() as { error: string }; error = e.error; return; }
+				const row = await res.json() as { id: string };
+				toast.success('申請しました');
+				onCreated?.(row.id);
 			}
-			const row = await res.json() as { id: string };
-			toast.success('申請を作成しました');
-			onCreated?.(row.id);
 		} finally {
 			saving = false;
 		}
@@ -335,8 +392,11 @@
 
 		<div class="form-actions">
 			<button type="button" class="btn-cancel" onclick={() => oncancel?.()}>キャンセル</button>
-			<button type="submit" class="btn-submit" disabled={saving}>
-				{saving ? '作成中...' : '申請を作成'}
+			<button type="button" class="btn-draft" onclick={saveDraft} disabled={saving || draftSaving}>
+				{draftSaving ? '保存中...' : '下書き保存'}
+			</button>
+			<button type="submit" class="btn-submit" disabled={saving || draftSaving}>
+				{saving ? '申請中...' : '申請する'}
 			</button>
 		</div>
 	</form>
@@ -615,6 +675,19 @@
 		cursor: pointer;
 	}
 	.btn-cancel:hover { border-color: var(--color-text-muted); color: var(--color-text); }
+
+	.btn-draft {
+		padding: 8px 18px;
+		background: none;
+		border: 1px solid var(--color-border);
+		border-radius: 6px;
+		color: var(--color-text-muted);
+		font-size: 0.9375rem;
+		cursor: pointer;
+		font-family: inherit;
+	}
+	.btn-draft:hover { border-color: var(--color-text-muted); color: var(--color-text); }
+	.btn-draft:disabled { opacity: 0.4; cursor: not-allowed; }
 
 	.btn-submit {
 		padding: 8px 22px;

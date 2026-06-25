@@ -8,6 +8,7 @@
 	let { data }: { data: PageData } = $props();
 
 	const STATUS_LABELS: Record<string, string> = {
+		draft: m.approval_status_draft(),
 		pending: m.approval_status_pending(),
 		approved: m.approval_status_approved(),
 		rejected: m.approval_status_rejected(),
@@ -342,6 +343,10 @@
 		font-weight: 500;
 		white-space: nowrap;
 
+		&.status-draft {
+			color: var(--color-neutral);
+			border-color: var(--color-neutral);
+		}
 		&.status-pending {
 			color: var(--color-warning);
 			border-color: var(--color-warning);

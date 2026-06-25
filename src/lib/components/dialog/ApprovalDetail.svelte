@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import type { ApprovalRow } from '$lib/server/db/approval-service';
-	import type { ApprovalReviewResult } from '../../../routes/api/approvals/[id]/ai-review/+server';
+	import type { ApprovalAnalysisResult, ApprovalAnalysisAnalyzed } from '$lib/server/ai/approval-analysis';
+	import ApprovalAnalysisChat from './ApprovalAnalysisChat.svelte';
 	import * as m from '$lib/paraglide/messages.js';
 
 	type Props = {
@@ -21,63 +22,56 @@
 	let comments = $state<Record<number, string>>({});
 
 	const STATUS_LABELS: Record<string, string> = {
-		pending: m.approval_status_pending(), approved: m.approval_status_approved(),
-		rejected: m.approval_status_rejected(), cancelled: m.approval_status_cancelled()
-	};
-	const STATUS_COLORS: Record<string, string> = {
-		pending: 'var(--color-warning)', approved: 'var(--color-success)', rejected: 'var(--color-error)', cancelled: 'var(--color-neutral)'
+		draft: m.approval_status_draft(), pending: m.approval_status_pending(),
+		approved: m.approval_status_approved(), rejected: m.approval_status_rejected(),
+		cancelled: m.approval_status_cancelled()
 	};
 	const STEP_ICONS: Record<string, string> = {
 		pending: '○', approved: '✓', rejected: '✗'
 	};
 	const RISK_LABELS: Record<string, string> = { low: '低', medium: '中', high: '高' };
-	const RISK_COLORS: Record<string, string> = { low: 'var(--color-success)', medium: 'var(--color-warning)', high: 'var(--color-error)' };
 
-	let aiReview = $state<ApprovalReviewResult | null>(null);
-	let aiReviewLoading = $state(false);
-	let aiReviewError = $state('');
+	let returnLoading = $state(false);
 
-	let metrics = $state<ApprovalMetricsResult | null>(null);
-	let metricsLoading = $state(false);
-	let metricsError = $state('');
-
-	async function runMetrics() {
-		if (!row || metricsLoading) return;
-		metricsLoading = true;
-		metricsError = '';
-		metrics = null;
+	async function returnApproval(stepIndex: number) {
+		if (!row || returnLoading) return;
+		returnLoading = true;
 		try {
-			const res = await fetch(`/api/approvals/${row.id}/metrics`, { method: 'POST' });
-			const result = await res.json() as ApprovalMetricsResult & { error?: string };
-			if (!res.ok) {
-				metricsError = result.error ?? '判断材料の生成に失敗しました。';
-				return;
+			const res = await fetch(`/api/approvals/${row.id}`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ action: 'return', comment: comments[stepIndex] ?? '' })
+			});
+			if (res.ok) {
+				row = await res.json() as ApprovalRow;
+				if (row) onChanged?.(row);
 			}
-			metrics = result;
-		} catch (e) {
-			metricsError = e instanceof Error ? e.message : String(e);
 		} finally {
-			metricsLoading = false;
+			returnLoading = false;
 		}
 	}
 
-	async function runAiReview() {
-		if (!row || aiReviewLoading) return;
-		aiReviewLoading = true;
-		aiReviewError = '';
-		aiReview = null;
+	let analysis = $state<ApprovalAnalysisResult | null>(null);
+	let analysisLoading = $state(false);
+	let analysisError = $state('');
+
+	async function runAnalysis() {
+		if (!row || analysisLoading) return;
+		analysisLoading = true;
+		analysisError = '';
+		analysis = null;
 		try {
-			const res = await fetch(`/api/approvals/${row.id}/ai-review`, { method: 'POST' });
-			const result = await res.json() as ApprovalReviewResult & { error?: string };
+			const res = await fetch(`/api/approvals/${row.id}/analyze`, { method: 'POST' });
+			const result = await res.json() as ApprovalAnalysisResult & { error?: string };
 			if (!res.ok) {
-				aiReviewError = result.error ?? 'AIレビューに失敗しました。';
+				analysisError = (result as { error?: string }).error ?? 'AI分析に失敗しました。';
 				return;
 			}
-			aiReview = result;
+			analysis = result;
 		} catch (e) {
-			aiReviewError = e instanceof Error ? e.message : String(e);
+			analysisError = e instanceof Error ? e.message : String(e);
 		} finally {
-			aiReviewLoading = false;
+			analysisLoading = false;
 		}
 	}
 
@@ -125,7 +119,6 @@
 	}
 
 	import type { Attachment } from '$lib/server/db/approval-service';
-	import type { ApprovalMetricsResult } from '../../../routes/api/approvals/[id]/metrics/+server';
 
 	function downloadHref(att: Attachment): string {
 		if (att.key) return `/api/attachments/${att.key}?filename=${encodeURIComponent(att.name)}`;
@@ -137,8 +130,11 @@
 	{#if !row}
 		<p class="status">申請が見つかりません。</p>
 	{:else}
-		{#if row.status === 'pending'}
+		{#if row.status === 'pending' || row.status === 'draft'}
 			<header class="page-header">
+				{#if row.status === 'draft'}
+					<a class="btn-edit" href="/approvals/{row.id}/edit">編集</a>
+				{/if}
 				<button class="btn-danger-outline" onclick={cancel} disabled={actionLoading}>取り消し</button>
 			</header>
 		{/if}
@@ -168,121 +164,125 @@
 			</section>
 		{/if}
 
-		<!-- AI Review -->
-		{#if row.status === 'pending'}
-			<section class="section">
-				<div class="section-head">
-					<h2 class="section-title">AIレビュー</h2>
-					<button class="btn-ai-review" onclick={runAiReview} disabled={aiReviewLoading}>
-						{#if aiReviewLoading}
-							レビュー中...
-						{:else if aiReview}
-							✨ 再レビュー
-						{:else}
-							✨ AIにレビューしてもらう
-						{/if}
-					</button>
-				</div>
-				{#if aiReviewError}
-					<p class="ai-review-error">{aiReviewError}</p>
-				{/if}
-				{#if aiReview}
-					<div class="ai-review-box">
-						<span class="risk-badge risk-{aiReview.riskLevel}">
-							リスク: {RISK_LABELS[aiReview.riskLevel] ?? aiReview.riskLevel}
-						</span>
-						<p class="ai-review-summary">{aiReview.summary}</p>
-						{#if aiReview.concerns.length > 0}
-							<div class="ai-review-group">
-								<h3 class="ai-review-group-title">問題点</h3>
-								<ul class="ai-review-list ai-review-concerns">
-									{#each aiReview.concerns as item}
-										<li>{item}</li>
-									{/each}
-								</ul>
-							</div>
-						{/if}
-						{#if aiReview.checks.length > 0}
-							<div class="ai-review-group">
-								<h3 class="ai-review-group-title">確認事項</h3>
-								<ul class="ai-review-list ai-review-checks">
-									{#each aiReview.checks as item}
-										<li>{item}</li>
-									{/each}
-								</ul>
-							</div>
-						{/if}
-					</div>
-				{/if}
-			</section>
+		<!-- 差し戻しコメント -->
+		{#if row.status === 'draft' && row.returnComment}
+			<div class="return-banner">
+				<span class="return-label">差し戻しコメント</span>
+				<p class="return-comment">{row.returnComment}</p>
+			</div>
 		{/if}
 
-		<!-- Metrics -->
+		<!-- AI分析 (承認レビュー + 判断材料 統合) -->
 		{#if row.status === 'pending'}
 			<section class="section">
 				<div class="section-head">
-					<h2 class="section-title">判断材料</h2>
-					<button class="btn-ai-review" onclick={runMetrics} disabled={metricsLoading}>
-						{#if metricsLoading}
-							計算中...
-						{:else if metrics}
-							↻ 再計算
+					<h2 class="section-title">AI分析</h2>
+					<button class="btn-ai-review" onclick={runAnalysis} disabled={analysisLoading}>
+						{#if analysisLoading}
+							分析中...
+						{:else if analysis}
+							↻ 再分析
 						{:else}
-							📊 判断材料を生成
+							✨ AI分析を実行
 						{/if}
 					</button>
 				</div>
-				{#if metricsError}
-					<p class="ai-review-error">{metricsError}</p>
+				{#if analysisError}
+					<p class="ai-review-error">{analysisError}</p>
 				{/if}
-				{#if metrics}
-					<div class="metrics-box">
-						<div class="metrics-badges">
-							<span class="data-quality-badge dq-{metrics.dataQuality}">
-								データ充足度: {metrics.dataQuality === 'high' ? '高' : metrics.dataQuality === 'medium' ? '中' : '低'}
-							</span>
-							{#if metrics.roi}
-								<span class="kpi-pill">ROI {metrics.roi}</span>
-							{/if}
-							{#if metrics.paybackPeriod}
-								<span class="kpi-pill">回収期間 {metrics.paybackPeriod}</span>
+				{#if analysis}
+					{#if analysis.status === 'insufficient'}
+						<div class="insufficient-box">
+							<p class="insufficient-reason">{analysis.reason}</p>
+							{#if analysis.suggestions.length > 0}
+								<div class="ai-review-group">
+									<h3 class="ai-review-group-title">追記すると分析できます</h3>
+									<ul class="ai-review-list ai-review-checks">
+										{#each analysis.suggestions as item}
+											<li>{item}</li>
+										{/each}
+									</ul>
+								</div>
 							{/if}
 						</div>
-						<p class="ai-review-summary">{metrics.summary}</p>
-						{#if metrics.keyFigures.length > 0}
-							<div class="kpi-cards">
-								{#each metrics.keyFigures as fig}
-									<div class="kpi-card">
-										<span class="kpi-label">{fig.label}</span>
-										<span class="kpi-value">{fig.value}</span>
-										{#if fig.description}
-											<span class="kpi-desc">{fig.description}</span>
+					{:else}
+						<div class="analysis-box">
+							<!-- レビュー部分 -->
+							<div class="analysis-review">
+								<span class="risk-badge risk-{analysis.riskLevel}">
+									リスク: {RISK_LABELS[analysis.riskLevel] ?? analysis.riskLevel}
+								</span>
+								<p class="ai-review-summary">{analysis.reviewSummary}</p>
+								{#if analysis.concerns.length > 0}
+									<div class="ai-review-group">
+										<h3 class="ai-review-group-title">問題点</h3>
+										<ul class="ai-review-list ai-review-concerns">
+											{#each analysis.concerns as item}<li>{item}</li>{/each}
+										</ul>
+									</div>
+								{/if}
+								{#if analysis.checks.length > 0}
+									<div class="ai-review-group">
+										<h3 class="ai-review-group-title">確認事項</h3>
+										<ul class="ai-review-list ai-review-checks">
+											{#each analysis.checks as item}<li>{item}</li>{/each}
+										</ul>
+									</div>
+								{/if}
+							</div>
+
+							<!-- 財務指標部分 -->
+							{#if analysis.keyFigures.length > 0 || analysis.roi || analysis.paybackPeriod}
+								<div class="analysis-metrics">
+									<div class="metrics-badges">
+										<span class="data-quality-badge dq-{analysis.dataQuality}">
+											データ充足度: {analysis.dataQuality === 'high' ? '高' : analysis.dataQuality === 'medium' ? '中' : '低'}
+										</span>
+										{#if analysis.roi}
+											<span class="kpi-pill">ROI {analysis.roi}</span>
+										{/if}
+										{#if analysis.paybackPeriod}
+											<span class="kpi-pill">回収期間 {analysis.paybackPeriod}</span>
 										{/if}
 									</div>
-								{/each}
-							</div>
-						{/if}
-						{#if metrics.riskPoints.length > 0}
-							<div class="ai-review-group">
-								<h3 class="ai-review-group-title">財務リスク</h3>
-								<ul class="ai-review-list ai-review-concerns">
-									{#each metrics.riskPoints as item}
-										<li>{item}</li>
-									{/each}
-								</ul>
-							</div>
-						{/if}
-						{#if metrics.missingData.length > 0}
-							<div class="ai-review-group">
-								<h3 class="ai-review-group-title">精度向上に必要な情報</h3>
-								<ul class="ai-review-list ai-review-checks">
-									{#each metrics.missingData as item}
-										<li>{item}</li>
-									{/each}
-								</ul>
-							</div>
-						{/if}
-					</div>
+									{#if analysis.keyFigures.length > 0}
+										<div class="kpi-cards">
+											{#each analysis.keyFigures as fig}
+												<div class="kpi-card">
+													<span class="kpi-label">{fig.label}</span>
+													<span class="kpi-value">{fig.value}</span>
+													{#if fig.quote}<span class="kpi-desc">「{fig.quote}」</span>{/if}
+												</div>
+											{/each}
+										</div>
+									{/if}
+									{#if analysis.roiFormula || analysis.paybackFormula}
+										<div class="ai-review-group">
+											<h3 class="ai-review-group-title">計算式</h3>
+											<ul class="formula-list">
+												{#if analysis.roiFormula}<li>ROI: {analysis.roiFormula}</li>{/if}
+												{#if analysis.paybackFormula}<li>回収期間: {analysis.paybackFormula}</li>{/if}
+											</ul>
+										</div>
+									{/if}
+									{#if analysis.missingData.length > 0}
+										<div class="ai-review-group">
+											<h3 class="ai-review-group-title">精度向上に必要な情報</h3>
+											<ul class="ai-review-list ai-review-checks">
+												{#each analysis.missingData as item}<li>{item}</li>{/each}
+											</ul>
+										</div>
+									{/if}
+								</div>
+							{/if}
+
+							<!-- シミュレーションチャット -->
+							<ApprovalAnalysisChat
+								approvalId={row.id}
+								analysis={analysis as ApprovalAnalysisAnalyzed}
+							/>
+						</div>
+					{/if}
 				{/if}
 			</section>
 		{/if}
@@ -349,8 +349,9 @@
 											rows="2"
 										></textarea>
 										<div class="action-btns">
-											<button class="btn-approve" onclick={() => act(i, 'approve_step')} disabled={actionLoading}>承認</button>
-											<button class="btn-reject" onclick={() => act(i, 'reject_step')} disabled={actionLoading}>否決</button>
+											<button class="btn-approve" onclick={() => act(i, 'approve_step')} disabled={actionLoading || returnLoading}>承認</button>
+											<button class="btn-reject" onclick={() => act(i, 'reject_step')} disabled={actionLoading || returnLoading}>棄却</button>
+											<button class="btn-return" onclick={() => returnApproval(i)} disabled={actionLoading || returnLoading}>差し戻し</button>
 										</div>
 									</div>
 								{/if}
@@ -373,13 +374,30 @@
 		gap: 20px;
 	}
 
-	.page-header { display: flex; align-items: center; justify-content: flex-end; }
+	.page-header {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 16px;
+	}
 
 	.breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 0.9375rem; }
 	.breadcrumb a { color: var(--color-primary); text-decoration: none; }
 	.breadcrumb a:hover { text-decoration: underline; }
 	.sep { color: var(--color-text-muted); }
 	.breadcrumb span:last-child { font-weight: 600; }
+
+	.btn-edit {
+		padding: 6px 14px;
+		background: none;
+		border: 1px solid var(--color-border);
+		border-radius: 6px;
+		color: var(--color-text-muted);
+		font-size: 0.875rem;
+		text-decoration: none;
+		cursor: pointer;
+	}
+	.btn-edit:hover { border-color: var(--color-primary); color: var(--color-primary); }
 
 	.btn-danger-outline {
 		padding: 6px 12px;
@@ -412,6 +430,7 @@
 		font-weight: 600;
 		white-space: nowrap;
 
+		&.status-draft { color: var(--color-neutral); border-color: var(--color-neutral); }
 		&.status-pending { color: var(--color-warning); border-color: var(--color-warning); }
 		&.status-approved { color: var(--color-success); border-color: var(--color-success); }
 		&.status-rejected { color: var(--color-error); border-color: var(--color-error); }
@@ -432,7 +451,7 @@
 	}
 	.section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 
-	/* AI Review */
+	/* AI分析 */
 	.btn-ai-review {
 		padding: 6px 14px;
 		background: none;
@@ -456,15 +475,45 @@
 		font-size: 0.875rem;
 	}
 
-	.ai-review-box {
+	.insufficient-box {
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
 		padding: 14px 16px;
 		border: 1px solid var(--color-border);
 		border-radius: 8px;
-		background: color-mix(in srgb, var(--color-primary) 4%, var(--color-surface));
+		background: color-mix(in srgb, var(--color-neutral) 6%, var(--color-surface));
 	}
+	.insufficient-reason {
+		margin: 0;
+		font-size: 0.9375rem;
+		color: var(--color-text-muted);
+	}
+
+	.analysis-box {
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+		border: 1px solid var(--color-border);
+		border-radius: 8px;
+		overflow: hidden;
+		background: color-mix(in srgb, var(--color-primary) 3%, var(--color-surface));
+	}
+	.analysis-review {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		padding: 14px 16px;
+	}
+	.analysis-metrics {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 14px 16px;
+		border-top: 1px solid var(--color-border);
+		background: color-mix(in srgb, var(--color-primary) 2%, var(--color-surface));
+	}
+
 	.risk-badge {
 		display: inline-flex;
 		align-self: flex-start;
@@ -474,7 +523,6 @@
 		border: 1px solid;
 		font-weight: 600;
 		white-space: nowrap;
-
 		&.risk-low { color: var(--color-success); border-color: var(--color-success); }
 		&.risk-medium { color: var(--color-warning); border-color: var(--color-warning); }
 		&.risk-high { color: var(--color-error); border-color: var(--color-error); }
@@ -491,16 +539,6 @@
 	.ai-review-concerns li::marker { color: var(--color-error); }
 	.ai-review-checks li::marker { color: var(--color-warning); }
 
-	/* Metrics */
-	.metrics-box {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-		padding: 14px 16px;
-		border: 1px solid var(--color-border);
-		border-radius: 8px;
-		background: color-mix(in srgb, var(--color-info, var(--color-primary)) 4%, var(--color-surface));
-	}
 	.metrics-badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 	.data-quality-badge {
 		font-size: 0.75rem;
@@ -537,7 +575,15 @@
 	}
 	.kpi-label { font-size: 0.75rem; color: var(--color-text-muted); font-weight: 500; }
 	.kpi-value { font-size: 1rem; font-weight: 700; color: var(--color-text); }
-	.kpi-desc { font-size: 0.75rem; color: var(--color-text-muted); }
+	.kpi-desc { font-size: 0.72rem; color: var(--color-text-muted); font-style: italic; }
+	.formula-list {
+		margin: 0;
+		padding-left: 1.4em;
+		font-size: 0.8125rem;
+		color: var(--color-text-muted);
+		font-family: monospace;
+		line-height: 1.8;
+	}
 
 	.content-box {
 		padding: 14px 16px;
@@ -657,6 +703,33 @@
 	}
 	.btn-reject:hover { background: color-mix(in srgb, var(--color-error) 10%, transparent); }
 	.btn-reject:disabled { opacity: 0.4; cursor: not-allowed; }
+
+	.btn-return {
+		padding: 7px 18px;
+		background: none; color: var(--color-warning);
+		border: 1px solid var(--color-warning); border-radius: 6px;
+		font-size: 0.875rem; cursor: pointer;
+	}
+	.btn-return:hover { background: color-mix(in srgb, var(--color-warning) 10%, transparent); }
+	.btn-return:disabled { opacity: 0.4; cursor: not-allowed; }
+
+	.return-banner {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		padding: 12px 16px;
+		border: 1px solid var(--color-warning);
+		border-radius: 8px;
+		background: color-mix(in srgb, var(--color-warning) 8%, var(--color-surface));
+	}
+	.return-label {
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--color-warning);
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+	.return-comment { margin: 0; font-size: 0.9375rem; line-height: 1.6; }
 
 	.empty-hint { color: var(--color-text-muted); font-size: 0.875rem; }
 	.status { color: var(--color-text-muted); font-size: 0.875rem; }
