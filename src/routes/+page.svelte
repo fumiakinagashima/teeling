@@ -25,15 +25,32 @@
 		return pending?.approver ?? '—';
 	}
 
-	let filter = $state<'pending' | 'all'>('pending');
-	let rows = $derived(
-		filter === 'pending' ? data.rows.filter((r) => r.status === 'pending') : data.rows
+	let filter = $state<'draft' | 'pending' | 'all'>('pending');
+	let myOnly = $state(true);
+
+	const baseRows = $derived(
+		filter === 'all' ? data.rows : data.rows.filter((r) => r.status === filter)
+	);
+	const rows = $derived(
+		myOnly
+			? baseRows.filter((r) => {
+					if (filter === 'pending') {
+						const currentStep = r.route.find((s) => s.status === 'pending');
+						return currentStep?.accountId === data.accountId;
+					}
+					return (
+						r.route.some((s) => s.accountId === data.accountId) ||
+						r.submittedBy === data.account?.name
+					);
+				})
+			: baseRows
 	);
 
 	const now = new Date();
 	const thisMonth = now.getMonth();
 	const thisYear = now.getFullYear();
 
+	const draftCount = $derived(data.rows.filter((r) => r.status === 'draft').length);
 	const pendingCount = $derived(data.rows.filter((r) => r.status === 'pending').length);
 	const approvedThisMonth = $derived(
 		data.rows.filter((r) => {
@@ -91,12 +108,10 @@
 			<span class="stat-value">{approvedThisMonth}</span>
 			<span class="stat-label">今月承認済</span>
 		</div>
-		{#if rejectedThisMonth > 0}
-			<div class="stat-card stat-rejected">
-				<span class="stat-value">{rejectedThisMonth}</span>
-				<span class="stat-label">今月否決</span>
-			</div>
-		{/if}
+		<div class="stat-card stat-rejected">
+			<span class="stat-value">{rejectedThisMonth}</span>
+			<span class="stat-label">今月否決</span>
+		</div>
 		<div class="stat-card stat-total">
 			<span class="stat-value">{data.rows.length}</span>
 			<span class="stat-label">総件数</span>
@@ -104,13 +119,26 @@
 	</div>
 
 	<div class="filter-tabs">
-		<button class="tab" class:active={filter === 'pending'} onclick={() => (filter = 'pending')}>
-			承認待ち
-			{#if pendingCount > 0}<span class="tab-badge">{pendingCount}</span>{/if}
-		</button>
-		<button class="tab" class:active={filter === 'all'} onclick={() => (filter = 'all')}>
-			全件
-		</button>
+		<div class="tabs-left">
+			<button class="tab" class:active={filter === 'pending'} onclick={() => (filter = 'pending')}>
+				承認待ち
+				{#if pendingCount > 0}<span class="tab-badge">{pendingCount}</span>{/if}
+			</button>
+			<button class="tab" class:active={filter === 'draft'} onclick={() => (filter = 'draft')}>
+				作成中
+				{#if draftCount > 0}<span class="tab-badge tab-badge-draft">{draftCount}</span>{/if}
+			</button>
+			<button class="tab" class:active={filter === 'all'} onclick={() => (filter = 'all')}>
+				全件
+			</button>
+		</div>
+		<label class="toggle-label">
+			<span class="toggle-text">自分が担当</span>
+			<span class="toggle-switch" class:on={myOnly}>
+				<input type="checkbox" bind:checked={myOnly} class="toggle-input" />
+				<span class="toggle-thumb"></span>
+			</span>
+		</label>
 	</div>
 
 	{#if rows.length === 0}
@@ -118,9 +146,12 @@
 			{#if filter === 'pending'}
 				<p class="empty-title">承認待ちの申請はありません</p>
 				<p class="empty-desc">すべての申請が処理済みです。</p>
+			{:else if filter === 'draft'}
+				<p class="empty-title">作成中の申請はありません</p>
+				<p class="empty-desc">下書き保存した申請がここに表示されます。</p>
 			{:else}
 				<p class="empty-title">申請がまだありません</p>
-				<p class="empty-desc">「新規申請」から最初の申請を作成してみましょう。<br>AIに相談しながら申請書を作成できます。</p>
+				<p class="empty-desc">「新規申請」から最初の申請を作成してみましょう。</p>
 				<a href="/approvals/new" class="btn-primary">+ 最初の申請を作成</a>
 			{/if}
 		</div>
@@ -211,6 +242,7 @@
 	.stats-row {
 		display: flex;
 		gap: 10px;
+		margin-bottom: 24px;
 	}
 
 	.stat-card {
@@ -251,12 +283,58 @@
 		font-weight: 700;
 		line-height: 1;
 		margin-left: 4px;
+
+		&.tab-badge-draft { background: var(--color-neutral); }
 	}
 
 	.filter-tabs {
 		display: flex;
-		gap: 0;
+		align-items: center;
+		justify-content: space-between;
 		border-bottom: 1px solid var(--color-border);
+	}
+
+	.tabs-left {
+		display: flex;
+		gap: 0;
+	}
+
+	.toggle-label {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding-bottom: 1px;
+		cursor: pointer;
+		user-select: none;
+	}
+	.toggle-text {
+		font-size: 0.8125rem;
+		color: var(--color-text-muted);
+	}
+	.toggle-input { display: none; }
+	.toggle-switch {
+		position: relative;
+		width: 32px;
+		height: 18px;
+		border-radius: 999px;
+		background: var(--color-border);
+		transition: background 0.2s;
+		flex-shrink: 0;
+
+		&.on { background: var(--color-primary); }
+	}
+	.toggle-thumb {
+		position: absolute;
+		top: 2px;
+		left: 2px;
+		width: 14px;
+		height: 14px;
+		border-radius: 50%;
+		background: #fff;
+		transition: transform 0.2s;
+		box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+
+		.on & { transform: translateX(14px); }
 	}
 
 	.tab {
