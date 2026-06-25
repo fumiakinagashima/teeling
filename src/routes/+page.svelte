@@ -50,16 +50,19 @@
 	const thisMonth = now.getMonth();
 	const thisYear = now.getFullYear();
 
-	const pendingCount = $derived(
+	const pendingCount = $derived(data.rows.filter((r) => r.status === 'pending').length);
+	const draftCount = $derived(data.rows.filter((r) => r.status === 'draft').length);
+
+	const pendingBadge = $derived(
 		myOnly
 			? data.rows.filter((r) => {
 					if (r.status !== 'pending') return false;
 					const currentStep = r.route.find((s) => s.status === 'pending');
 					return currentStep?.accountId === data.accountId;
 				}).length
-			: data.rows.filter((r) => r.status === 'pending').length
+			: pendingCount
 	);
-	const draftCount = $derived(
+	const draftBadge = $derived(
 		myOnly
 			? data.rows.filter((r) => {
 					if (r.status !== 'draft') return false;
@@ -68,7 +71,7 @@
 						r.submittedBy === data.account?.name
 					);
 				}).length
-			: data.rows.filter((r) => r.status === 'draft').length
+			: draftCount
 	);
 	const approvedThisMonth = $derived(
 		data.rows.filter((r) => {
@@ -140,11 +143,11 @@
 		<div class="tabs-left">
 			<button class="tab" class:active={filter === 'pending'} onclick={() => (filter = 'pending')}>
 				承認待ち
-				{#if pendingCount > 0}<span class="tab-badge">{pendingCount}</span>{/if}
+				{#if pendingBadge > 0}<span class="tab-badge">{pendingBadge}</span>{/if}
 			</button>
 			<button class="tab" class:active={filter === 'draft'} onclick={() => (filter = 'draft')}>
 				作成中
-				{#if draftCount > 0}<span class="tab-badge tab-badge-draft">{draftCount}</span>{/if}
+				{#if draftBadge > 0}<span class="tab-badge tab-badge-draft">{draftBadge}</span>{/if}
 			</button>
 			<button class="tab" class:active={filter === 'all'} onclick={() => (filter = 'all')}>
 				全件
