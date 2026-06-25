@@ -148,7 +148,8 @@
 			<a href="/settings/email">{m.email_settings()}</a>
 			<a href="/settings/ai">{m.ai_settings()}</a>
 		{/if}
-		<a href="/settings/account">{m.account_settings()}</a>
+		<a href="/settings/account">プロフィール</a>
+		<a href="/settings/account/password">パスワード変更</a>
 	</nav>
 
 	<div class="header">

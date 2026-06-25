@@ -46,7 +46,8 @@
 			<a href="/settings/email" class:active={currentPath === '/settings/email'}>{m.email_settings()}</a>
 			<a href="/settings/ai" class:active={currentPath === '/settings/ai'}>{m.ai_settings()}</a>
 		{/if}
-		<a href="/settings/account" class:active={currentPath === '/settings/account'}>{m.account_settings()}</a>
+		<a href="/settings/account" class:active={currentPath === '/settings/account'}>プロフィール</a>
+		<a href="/settings/account/password" class:active={currentPath === '/settings/account/password'}>パスワード変更</a>
 	</nav>
 
 	<section>

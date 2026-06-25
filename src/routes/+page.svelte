@@ -50,8 +50,26 @@
 	const thisMonth = now.getMonth();
 	const thisYear = now.getFullYear();
 
-	const draftCount = $derived(data.rows.filter((r) => r.status === 'draft').length);
-	const pendingCount = $derived(data.rows.filter((r) => r.status === 'pending').length);
+	const pendingCount = $derived(
+		myOnly
+			? data.rows.filter((r) => {
+					if (r.status !== 'pending') return false;
+					const currentStep = r.route.find((s) => s.status === 'pending');
+					return currentStep?.accountId === data.accountId;
+				}).length
+			: data.rows.filter((r) => r.status === 'pending').length
+	);
+	const draftCount = $derived(
+		myOnly
+			? data.rows.filter((r) => {
+					if (r.status !== 'draft') return false;
+					return (
+						r.route.some((s) => s.accountId === data.accountId) ||
+						r.submittedBy === data.account?.name
+					);
+				}).length
+			: data.rows.filter((r) => r.status === 'draft').length
+	);
 	const approvedThisMonth = $derived(
 		data.rows.filter((r) => {
 			if (r.status !== 'approved') return false;
