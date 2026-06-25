@@ -28,6 +28,7 @@ export type ToolName =
 	| 'create_approval'
 	| 'update_approval_step'
 	| 'cancel_approval'
+	| 'calculate_approval_metrics'
 	| 'get_help';
 
 export const tools: Tool[] = [
@@ -65,6 +66,7 @@ export async function dispatchTool(
 		case 'create_approval':                return approvals.handleCreateApproval(db, input, env);
 		case 'update_approval_step':           return approvals.handleUpdateApprovalStep(db, input, env);
 		case 'cancel_approval':                return approvals.handleCancelApproval(db, input);
+		case 'calculate_approval_metrics':     return approvals.handleCalculateApprovalMetrics(db, input, env);
 		case 'get_help':                       return help.handleGetHelp(input);
 		default:
 			throw new Error(`Unknown tool: ${name}`);

@@ -5,9 +5,10 @@ compatibility_flags = ["nodejs_compat"]
 main = "worker.ts"
 assets = { directory = ".svelte-kit/cloudflare/", binding = "ASSETS" }
 
-# リマインダー配信: pending な reminders を1分ごとにチェックし、remind_at に達したものを送信する
+# リマインダー配信: pending な reminders を1分ごとにチェック
+# 承認待ちサマリー: 毎週月曜 0:00 UTC (9:00 JST) に承認担当者へ配信
 [triggers]
-crons = ["* * * * *"]
+crons = ["* * * * *", "0 0 * * 1"]
 
 [[d1_databases]]
 binding = "DB"

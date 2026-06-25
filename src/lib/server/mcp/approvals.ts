@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Tool } from '@anthropic-ai/sdk/resources/messages';
+import Anthropic from '@anthropic-ai/sdk';
 import type { Db } from '../db';
 import {
 	listApprovals,
@@ -9,6 +10,7 @@ import {
 	cancelApproval
 } from '../db/approval-service';
 import type { ToolEnv } from './shared';
+import { METRICS_SYSTEM_PROMPT, buildMetricsPrompt } from '../ai/approval-metrics';
 
 export const tools: Tool[] = [
 	{
@@ -86,6 +88,16 @@ export const tools: Tool[] = [
 			properties: { id: { type: 'string', description: '申請ID' } },
 			required: ['id']
 		}
+	},
+	{
+		name: 'calculate_approval_metrics',
+		description:
+			'申請内容からROI・回収期間・費用対効果などの財務的な判断材料を計算・生成する。「ROIを計算して」「費用対効果を分析して」「判断材料を出して」などの依頼に使う。',
+		input_schema: {
+			type: 'object',
+			properties: { id: { type: 'string', description: '申請ID' } },
+			required: ['id']
+		}
 	}
 ];
 
@@ -149,4 +161,25 @@ export async function handleUpdateApprovalStep(db: Db, input: unknown, env?: Too
 export async function handleCancelApproval(db: Db, input: unknown) {
 	const { id } = cancelApprovalSchema.parse(input);
 	return cancelApproval(db, id);
+}
+
+export async function handleCalculateApprovalMetrics(db: Db, input: unknown, env?: ToolEnv) {
+	const { id } = z.object({ id: z.string() }).parse(input);
+	const row = await getApproval(db, id);
+	if (!row) throw new Error(`申請が見つかりません: ${id}`);
+
+	const apiKey = env?.ANTHROPIC_API_KEY;
+	if (!apiKey) throw new Error('ANTHROPIC_API_KEY が設定されていません');
+
+	const anthropic = new Anthropic({ apiKey, timeout: 30000 });
+	const message = await anthropic.messages.create({
+		model: 'claude-haiku-4-5-20251001',
+		max_tokens: 1024,
+		system: METRICS_SYSTEM_PROMPT,
+		messages: [{ role: 'user', content: buildMetricsPrompt(row) }]
+	});
+	const text = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '';
+	const jsonMatch = text.match(/\{[\s\S]*\}/);
+	if (!jsonMatch) throw new Error('判断材料の生成に失敗しました');
+	return JSON.parse(jsonMatch[0]);
 }

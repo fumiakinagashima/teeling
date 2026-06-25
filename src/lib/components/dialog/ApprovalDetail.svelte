@@ -37,6 +37,30 @@
 	let aiReviewLoading = $state(false);
 	let aiReviewError = $state('');
 
+	let metrics = $state<ApprovalMetricsResult | null>(null);
+	let metricsLoading = $state(false);
+	let metricsError = $state('');
+
+	async function runMetrics() {
+		if (!row || metricsLoading) return;
+		metricsLoading = true;
+		metricsError = '';
+		metrics = null;
+		try {
+			const res = await fetch(`/api/approvals/${row.id}/metrics`, { method: 'POST' });
+			const result = await res.json() as ApprovalMetricsResult & { error?: string };
+			if (!res.ok) {
+				metricsError = result.error ?? '判断材料の生成に失敗しました。';
+				return;
+			}
+			metrics = result;
+		} catch (e) {
+			metricsError = e instanceof Error ? e.message : String(e);
+		} finally {
+			metricsLoading = false;
+		}
+	}
+
 	async function runAiReview() {
 		if (!row || aiReviewLoading) return;
 		aiReviewLoading = true;
@@ -101,6 +125,7 @@
 	}
 
 	import type { Attachment } from '$lib/server/db/approval-service';
+	import type { ApprovalMetricsResult } from '../../../routes/api/approvals/[id]/metrics/+server';
 
 	function downloadHref(att: Attachment): string {
 		if (att.key) return `/api/attachments/${att.key}?filename=${encodeURIComponent(att.name)}`;
@@ -182,6 +207,76 @@
 								<h3 class="ai-review-group-title">確認事項</h3>
 								<ul class="ai-review-list ai-review-checks">
 									{#each aiReview.checks as item}
+										<li>{item}</li>
+									{/each}
+								</ul>
+							</div>
+						{/if}
+					</div>
+				{/if}
+			</section>
+		{/if}
+
+		<!-- Metrics -->
+		{#if row.status === 'pending'}
+			<section class="section">
+				<div class="section-head">
+					<h2 class="section-title">判断材料</h2>
+					<button class="btn-ai-review" onclick={runMetrics} disabled={metricsLoading}>
+						{#if metricsLoading}
+							計算中...
+						{:else if metrics}
+							↻ 再計算
+						{:else}
+							📊 判断材料を生成
+						{/if}
+					</button>
+				</div>
+				{#if metricsError}
+					<p class="ai-review-error">{metricsError}</p>
+				{/if}
+				{#if metrics}
+					<div class="metrics-box">
+						<div class="metrics-badges">
+							<span class="data-quality-badge dq-{metrics.dataQuality}">
+								データ充足度: {metrics.dataQuality === 'high' ? '高' : metrics.dataQuality === 'medium' ? '中' : '低'}
+							</span>
+							{#if metrics.roi}
+								<span class="kpi-pill">ROI {metrics.roi}</span>
+							{/if}
+							{#if metrics.paybackPeriod}
+								<span class="kpi-pill">回収期間 {metrics.paybackPeriod}</span>
+							{/if}
+						</div>
+						<p class="ai-review-summary">{metrics.summary}</p>
+						{#if metrics.keyFigures.length > 0}
+							<div class="kpi-cards">
+								{#each metrics.keyFigures as fig}
+									<div class="kpi-card">
+										<span class="kpi-label">{fig.label}</span>
+										<span class="kpi-value">{fig.value}</span>
+										{#if fig.description}
+											<span class="kpi-desc">{fig.description}</span>
+										{/if}
+									</div>
+								{/each}
+							</div>
+						{/if}
+						{#if metrics.riskPoints.length > 0}
+							<div class="ai-review-group">
+								<h3 class="ai-review-group-title">財務リスク</h3>
+								<ul class="ai-review-list ai-review-concerns">
+									{#each metrics.riskPoints as item}
+										<li>{item}</li>
+									{/each}
+								</ul>
+							</div>
+						{/if}
+						{#if metrics.missingData.length > 0}
+							<div class="ai-review-group">
+								<h3 class="ai-review-group-title">精度向上に必要な情報</h3>
+								<ul class="ai-review-list ai-review-checks">
+									{#each metrics.missingData as item}
 										<li>{item}</li>
 									{/each}
 								</ul>
@@ -395,6 +490,54 @@
 	.ai-review-list { margin: 0; padding-left: 1.4em; font-size: 0.875rem; line-height: 1.7; display: flex; flex-direction: column; gap: 4px; }
 	.ai-review-concerns li::marker { color: var(--color-error); }
 	.ai-review-checks li::marker { color: var(--color-warning); }
+
+	/* Metrics */
+	.metrics-box {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 14px 16px;
+		border: 1px solid var(--color-border);
+		border-radius: 8px;
+		background: color-mix(in srgb, var(--color-info, var(--color-primary)) 4%, var(--color-surface));
+	}
+	.metrics-badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+	.data-quality-badge {
+		font-size: 0.75rem;
+		padding: 2px 10px;
+		border-radius: 20px;
+		border: 1px solid;
+		font-weight: 600;
+		white-space: nowrap;
+		&.dq-high { color: var(--color-success); border-color: var(--color-success); }
+		&.dq-medium { color: var(--color-warning); border-color: var(--color-warning); }
+		&.dq-low { color: var(--color-neutral); border-color: var(--color-neutral); }
+	}
+	.kpi-pill {
+		font-size: 0.75rem;
+		padding: 2px 10px;
+		border-radius: 20px;
+		background: var(--color-primary);
+		color: #fff;
+		font-weight: 600;
+	}
+	.kpi-cards {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+		gap: 8px;
+	}
+	.kpi-card {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		padding: 10px 12px;
+		border: 1px solid var(--color-border);
+		border-radius: 8px;
+		background: var(--color-surface);
+	}
+	.kpi-label { font-size: 0.75rem; color: var(--color-text-muted); font-weight: 500; }
+	.kpi-value { font-size: 1rem; font-weight: 700; color: var(--color-text); }
+	.kpi-desc { font-size: 0.75rem; color: var(--color-text-muted); }
 
 	.content-box {
 		padding: 14px 16px;
