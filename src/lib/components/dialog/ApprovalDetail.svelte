@@ -322,7 +322,9 @@
 			{:else}
 				<div class="route-list">
 					{#each row.route as step, i}
-						<div class="step-card" class:step-active={step.status === 'pending' && row.status === 'pending'}>
+						{@const priorApproved = row.route.filter(s => s.step < step.step).every(s => s.status === 'approved')}
+						{@const isActive = step.status === 'pending' && row.status === 'pending' && priorApproved}
+						<div class="step-card" class:step-active={isActive}>
 							<div class="step-icon step-icon-{step.status}">
 								{STEP_ICONS[step.status] ?? '○'}
 							</div>
@@ -340,7 +342,7 @@
 								{#if step.acted_at}
 									<p class="step-date">{fmtDate(step.acted_at)}</p>
 								{/if}
-								{#if step.status === 'pending' && row.status === 'pending' && (!step.accountId || step.accountId === accountId)}
+								{#if isActive && (!step.accountId || step.accountId === accountId)}
 									<div class="step-actions">
 										<textarea
 											class="comment-input"

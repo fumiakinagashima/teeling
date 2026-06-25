@@ -113,16 +113,18 @@ export type CreateApprovalInput = {
 export async function createApproval(db: Db, input: CreateApprovalInput): Promise<ApprovalRow> {
 	const id = crypto.randomUUID();
 	const now = new Date();
-	const route: ApprovalStep[] = input.route.map(s => ({
-		step: s.step,
-		accountId: s.accountId,
-		approver: s.approver,
-		email: s.email,
-		role: s.role,
-		status: 'pending',
-		comment: null,
-		acted_at: null
-	}));
+	const route: ApprovalStep[] = input.route
+		.map(s => ({
+			step: s.step,
+			accountId: s.accountId,
+			approver: s.approver,
+			email: s.email,
+			role: s.role,
+			status: 'pending' as const,
+			comment: null,
+			acted_at: null
+		}))
+		.sort((a, b) => a.step - b.step);
 
 	await db.insert(approvalRequests).values({
 		id,
@@ -160,6 +162,11 @@ export async function updateApprovalStep(
 	const step = route[stepIndex];
 	if (step.accountId && step.accountId !== accountId) {
 		throw new Error('このステップを操作する権限がありません');
+	}
+
+	const priorSteps = route.filter(s => s.step < step.step);
+	if (priorSteps.some(s => s.status !== 'approved')) {
+		throw new Error('前のステップが承認されていないため、このステップを操作できません');
 	}
 
 	route[stepIndex] = {
@@ -233,7 +240,7 @@ export async function saveDraftApproval(db: Db, id: string, input: ContentInput)
 		? input.route.map(s => ({
 			step: s.step, accountId: s.accountId, approver: s.approver,
 			email: s.email, role: s.role, status: 'pending' as const, comment: null, acted_at: null
-		}))
+		})).sort((a, b) => a.step - b.step)
 		: existing.route;
 
 	await db
@@ -261,7 +268,7 @@ export async function updateApprovalContent(db: Db, id: string, input: ContentIn
 		? input.route.map(s => ({
 			step: s.step, accountId: s.accountId, approver: s.approver,
 			email: s.email, role: s.role, status: 'pending' as const, comment: null, acted_at: null
-		}))
+		})).sort((a, b) => a.step - b.step)
 		: existing.route;
 
 	await db

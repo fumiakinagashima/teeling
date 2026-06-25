@@ -149,13 +149,16 @@
 	}
 
 	function buildRoute() {
-		return routeEntries.filter(r => r.approver.trim()).map(r => ({
-			step: r.step,
-			accountId: r.accountId || undefined,
-			approver: r.approver.trim(),
-			email: r.email.trim() || undefined,
-			role: r.role.trim() || undefined
-		}));
+		return routeEntries
+			.filter(r => r.approver.trim())
+			.map(r => ({
+				step: r.step,
+				accountId: r.accountId || undefined,
+				approver: r.approver.trim(),
+				email: r.email.trim() || undefined,
+				role: r.role.trim() || undefined
+			}))
+			.sort((a, b) => a.step - b.step);
 	}
 
 	async function getAttachments(): Promise<Attachment[] | false> {
