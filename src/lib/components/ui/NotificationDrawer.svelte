@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import * as m from '$lib/paraglide/messages.js';
 	import { notificationCenter, type NotificationItem } from '$lib/stores/notifications.svelte';
 	import X from '$lib/components/icon/X.svelte';
@@ -10,6 +9,8 @@
 	};
 
 	let { open, onclose }: Props = $props();
+
+	let selected = $state<NotificationItem | null>(null);
 
 	function truncate(text: string, max = 40): string {
 		return text.length > max ? `${text.slice(0, max)}...` : text;
@@ -25,11 +26,27 @@
 	}
 
 	async function selectNotification(item: NotificationItem) {
-		onclose();
+		selected = item;
 		await notificationCenter.markRead(item.id);
-		await goto(`/?notification=${item.id}`);
+	}
+
+	function closeDetail() {
+		selected = null;
 	}
 </script>
+
+{#if selected}
+	<div class="detail-overlay" role="presentation" onclick={closeDetail}>
+		<div class="detail-modal" onclick={(e) => e.stopPropagation()}>
+			<div class="detail-head">
+				<h2 class="detail-title">{selected.title}</h2>
+				<button class="close-btn" onclick={closeDetail} aria-label="閉じる"><X size={16} /></button>
+			</div>
+			<p class="detail-date">{formatDate(selected.createdAt)}</p>
+			<div class="detail-body">{selected.body}</div>
+		</div>
+	</div>
+{/if}
 
 <div class="overlay" class:open role="presentation" onclick={onclose}></div>
 <aside class="drawer" class:open aria-hidden={!open}>
@@ -199,5 +216,54 @@
 		font-size: 0.75rem;
 		color: var(--color-text-muted);
 		opacity: 0.8;
+	}
+
+	.detail-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.45);
+		z-index: 110;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.detail-modal {
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: 12px;
+		padding: 24px;
+		width: min(480px, 94vw);
+		max-height: 80vh;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		overflow: hidden;
+	}
+	.detail-head {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+	}
+	.detail-title {
+		font-size: 1rem;
+		font-weight: 600;
+		margin: 0;
+		line-height: 1.4;
+	}
+	.detail-date {
+		margin: 0;
+		font-size: 0.8125rem;
+		color: var(--color-text-muted);
+	}
+	.detail-body {
+		overflow-y: auto;
+		padding: 12px 14px;
+		border: 1px solid var(--color-border);
+		border-radius: 8px;
+		background: var(--color-background);
+		font-size: 0.875rem;
+		line-height: 1.7;
+		white-space: pre-wrap;
 	}
 </style>
