@@ -2,6 +2,7 @@
 	import type { Attachment, ApprovalRow } from '$lib/server/db/approval-service';
 	import type { ApprovalDraftReviewResult } from '../../../routes/api/approvals/ai-review-draft/+server';
 	import type { AccountRow } from '$lib/server/db/account-service';
+	import type { TemplateRow } from '$lib/types/template';
 	import { toast } from '$lib/stores/toast.svelte';
 
 	type Props = {
@@ -55,6 +56,36 @@
 			entry.role = '';
 		}
 		routeEntries = [...routeEntries]; // trigger reactivity
+	}
+
+	// Templates
+	let templates = $state<TemplateRow[]>([]);
+	let selectedTemplateId = $state('');
+	let customFieldValues = $state<Record<string, string>>({});
+
+	$effect(() => {
+		fetch('/api/templates').then(r => r.json()).then((d: unknown) => { templates = (d as { rows?: TemplateRow[] }).rows ?? []; });
+	});
+
+	const currentTemplate = $derived(templates.find(t => t.id === selectedTemplateId) ?? null);
+
+	function onTemplateChange(id: string) {
+		selectedTemplateId = id;
+		if (!id) return;
+		const t = templates.find(tmpl => tmpl.id === id);
+		if (!t) return;
+		if (!content) content = t.bodyFormat;
+		if (routeEntries.every(r => !r.approver.trim())) {
+			routeEntries = t.defaultRoute.map((r, i) => ({
+				step: r.step ?? i + 1,
+				accountId: '',
+				approver: r.approver,
+				email: r.email ?? '',
+				role: r.role ?? ''
+			}));
+			if (routeEntries.length === 0) routeEntries = [{ step: 1, accountId: '', approver: '', email: '', role: '' }];
+		}
+		customFieldValues = {};
 	}
 
 	let saving = $state(false);
@@ -193,7 +224,18 @@
 				const res = await fetch('/api/approvals', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ title: title.trim(), content: content.trim() || undefined, attachments, status: 'draft', route: buildRoute() })
+					body: JSON.stringify({
+						title: title.trim(),
+						content: content.trim() || undefined,
+						attachments,
+						status: 'draft',
+						route: buildRoute(),
+						...(currentTemplate && {
+							templateId: currentTemplate.id,
+							fieldDefs: currentTemplate.customFields,
+							fields: customFieldValues
+						})
+					})
 				});
 				if (!res.ok) { const e = await res.json() as { error: string }; error = e.error; return; }
 				const row = await res.json() as { id: string };
@@ -231,7 +273,18 @@
 				const res = await fetch('/api/approvals', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ title: title.trim(), content: content.trim() || undefined, attachments, status: 'pending', route: buildRoute() })
+					body: JSON.stringify({
+						title: title.trim(),
+						content: content.trim() || undefined,
+						attachments,
+						status: 'pending',
+						route: buildRoute(),
+						...(currentTemplate && {
+							templateId: currentTemplate.id,
+							fieldDefs: currentTemplate.customFields,
+							fields: customFieldValues
+						})
+					})
 				});
 				if (!res.ok) { const e = await res.json() as { error: string }; error = e.error; return; }
 				const row = await res.json() as { id: string };
@@ -247,6 +300,23 @@
 <div class="page">
 	<form class="form" onsubmit={(e) => { e.preventDefault(); submit(); }}>
 
+		<!-- Template -->
+		{#if templates.length > 0}
+			<div class="field">
+				<label>テンプレート（任意）</label>
+				<select
+					class="template-select"
+					value={selectedTemplateId}
+					onchange={(e) => onTemplateChange((e.target as HTMLSelectElement).value)}
+				>
+					<option value="">— 使用しない —</option>
+					{#each templates as t}
+						<option value={t.id}>{t.name}（{t.type}）</option>
+					{/each}
+				</select>
+			</div>
+		{/if}
+
 		<!-- Title -->
 		<div class="field">
 			<label>タイトル <span class="req">*</span></label>
@@ -258,6 +328,31 @@
 			<label>申請内容</label>
 			<textarea class="content-input" bind:value={content} rows="5" placeholder="申請の背景・理由・詳細を記入してください。"></textarea>
 		</div>
+
+		<!-- Custom Fields -->
+		{#if currentTemplate && currentTemplate.customFields.length > 0}
+			<div class="field">
+				<label>カスタムフィールド</label>
+				<div class="custom-fields">
+					{#each currentTemplate.customFields as field}
+						<div class="custom-field">
+							<label class="cf-label">
+								{field.label}{#if field.required}<span class="req"> *</span>{/if}
+							</label>
+							{#if field.type === 'text'}
+								<input type="text" bind:value={customFieldValues[field.key]} />
+							{:else if field.type === 'number'}
+								<input type="number" bind:value={customFieldValues[field.key]} />
+							{:else if field.type === 'date'}
+								<input type="date" bind:value={customFieldValues[field.key]} />
+							{:else if field.type === 'time'}
+								<input type="time" bind:value={customFieldValues[field.key]} />
+							{/if}
+						</div>
+					{/each}
+				</div>
+			</div>
+		{/if}
 
 		<!-- AI Review (draft) -->
 		<div class="field">
@@ -473,6 +568,40 @@
 		margin: 0;
 	}
 	.ai-review-list { margin: 0; padding-left: 1.4em; font-size: 0.875rem; line-height: 1.7; display: flex; flex-direction: column; gap: 4px; }
+
+	.template-select {
+		padding: 9px 11px;
+		border: 1px solid var(--color-border);
+		border-radius: 6px;
+		background: var(--color-background);
+		color: var(--color-text);
+		font-size: 0.9375rem;
+		font-family: inherit;
+		cursor: pointer;
+		&:focus { outline: none; border-color: var(--color-primary); }
+	}
+
+	.custom-fields {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		padding: 14px 16px;
+		border: 1px solid var(--color-border);
+		border-radius: 8px;
+		background: var(--color-surface);
+	}
+
+	.custom-field {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.cf-label {
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: var(--color-text-muted);
+	}
 
 	input[type="text"], input[type="email"], input[type="number"] {
 		padding: 9px 11px;

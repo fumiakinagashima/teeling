@@ -57,6 +57,10 @@
 		</button>
 
 		{#if account.permission === 'admin'}
+			<a href="/database/templates" class="footer-item" class:active={isActive('/database/templates')}>
+				<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+				テンプレート
+			</a>
 			<a href="/database/accounts" class="footer-item" class:active={isActive('/database/accounts')}>
 				<Users size={15} />
 				アカウント

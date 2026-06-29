@@ -33,6 +33,8 @@ export type ApprovalRow = {
 	returnComment?: string;
 	route: ApprovalStep[];
 	attachments: Attachment[];
+	fields?: Record<string, unknown>;
+	fieldDefs?: { key: string; label: string; type: string }[];
 	createdAt: Date;
 	updatedAt: Date;
 };
@@ -60,6 +62,8 @@ function toRow(r: typeof approvalRequests.$inferSelect, submitterName?: string |
 		updatedAt: r.updatedAt
 	};
 	if (data.returnComment) row.returnComment = String(data.returnComment);
+	if (data.fields) row.fields = data.fields as Record<string, unknown>;
+	if (data.fieldDefs) row.fieldDefs = data.fieldDefs as { key: string; label: string; type: string }[];
 	return row;
 }
 
@@ -115,6 +119,9 @@ export type CreateApprovalInput = {
 	status?: 'draft' | 'pending';
 	route: Array<{ step: number; accountId?: string; approver: string; email?: string; role?: string }>;
 	attachments?: Attachment[];
+	templateId?: string;
+	fieldDefs?: { key: string; label: string; type: string }[];
+	fields?: Record<string, unknown>;
 };
 
 export async function createApproval(db: Db, input: CreateApprovalInput): Promise<ApprovalRow> {
@@ -140,7 +147,12 @@ export async function createApproval(db: Db, input: CreateApprovalInput): Promis
 		submittedBy: input.submittedByAccountId ?? '',
 		entityType: null,
 		entityId: null,
-		data: JSON.stringify({ content: input.content ?? '' }),
+		data: JSON.stringify({
+			content: input.content ?? '',
+			...(input.templateId && { templateId: input.templateId }),
+			...(input.fieldDefs && { fieldDefs: input.fieldDefs }),
+			...(input.fields && { fields: input.fields })
+		}),
 		route: JSON.stringify(route),
 		attachments: JSON.stringify(input.attachments ?? []),
 		status: input.status ?? 'pending',

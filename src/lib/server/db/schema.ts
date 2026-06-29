@@ -105,6 +105,21 @@ export const reminders = sqliteTable('reminders', {
 });
 
 
+export const approvalTemplates = sqliteTable('approval_templates', {
+	id: text('id').primaryKey(),
+	name: text('name').notNull(),
+	type: text('type').notNull(),
+	description: text('description'),
+	bodyFormat: text('body_format').notNull().default(''),
+	customFields: text('custom_fields').notNull().default('[]'),
+	defaultRoute: text('default_route').notNull().default('[]'),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`)
+});
+
+export type ApprovalTemplate = typeof approvalTemplates.$inferSelect;
+export type NewApprovalTemplate = typeof approvalTemplates.$inferInsert;
+
 export type EmailProviderSettings = typeof emailProviders.$inferSelect;
 export type NewEmailProviderSettings = typeof emailProviders.$inferInsert;
 export type AiSettings = typeof aiSettings.$inferSelect;

@@ -38,14 +38,25 @@ export const METRICS_SYSTEM_PROMPT = `あなたはTeelingという申請管理�
   "missingData": ["..."]
 }`;
 
-export function buildMetricsPrompt(row: { title: string; content: string }): string {
+export function buildMetricsPrompt(row: {
+	title: string;
+	content: string;
+	fields?: Record<string, unknown>;
+	fieldDefs?: { key: string; label: string; type: string }[];
+}): string {
+	const fieldSection = (row.fieldDefs?.length ?? 0) > 0
+		? '\n\n## 申請フィールド\n' + row.fieldDefs!.map(def => {
+			const val = row.fields?.[def.key];
+			return `- ${def.label}: ${val !== undefined && val !== '' ? String(val) : '（未入力）'}`;
+		}).join('\n')
+		: '';
 	return `以下の社内承認申請について、財務的な判断材料を抽出してください。
 
 ## タイトル
 ${row.title}
 
 ## 申請内容
-${row.content || '（記載なし）'}
+${row.content || '（記載なし）'}${fieldSection}
 
 **重要**: 申請内容に明記されている数値のみを使用してください。書かれていない数値は絶対に作らないでください。ROIや回収期間は費用と効果の両方が明記されている場合にのみ計算し、計算式も記載してください。`;
 }

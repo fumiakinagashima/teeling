@@ -82,10 +82,18 @@ export function buildAnalysisPrompt(row: {
 	content: string;
 	submittedBy: string;
 	route: { step: number; approver: string; role?: string }[];
+	fields?: Record<string, unknown>;
+	fieldDefs?: { key: string; label: string; type: string }[];
 }): string {
 	const routeLines = row.route.length > 0
 		? row.route.map((s) => `Step${s.step}: ${s.approver}${s.role ? `（${s.role}）` : ''}`).join(' → ')
 		: 'なし';
+	const fieldSection = (row.fieldDefs?.length ?? 0) > 0
+		? '\n\n## 申請フィールド\n' + row.fieldDefs!.map(def => {
+			const val = row.fields?.[def.key];
+			return `- ${def.label}: ${val !== undefined && val !== '' ? String(val) : '（未入力）'}`;
+		}).join('\n')
+		: '';
 	return `以下の社内承認申請を分析してください。
 
 ## タイトル
@@ -98,7 +106,7 @@ ${row.submittedBy || '不明'}
 ${routeLines}
 
 ## 申請内容
-${row.content || '（記載なし）'}
+${row.content || '（記載なし）'}${fieldSection}
 
 財務数値は原文に記載されているものだけを使用し、書かれていない数値は作らないでください。`;
 }
