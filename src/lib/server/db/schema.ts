@@ -104,54 +104,6 @@ export const reminders = sqliteTable('reminders', {
 		.default(sql`(unixepoch())`)
 });
 
-export const chats = sqliteTable('chats', {
-	id: text('id').primaryKey(),
-	title: text('title').notNull().default(''),
-	accountId: text('account_id'),
-	createdAt: integer('created_at', { mode: 'timestamp' })
-		.notNull()
-		.default(sql`(unixepoch())`),
-	updatedAt: integer('updated_at', { mode: 'timestamp' })
-		.notNull()
-		.default(sql`(unixepoch())`)
-});
-
-export const chatMessages = sqliteTable('chat_messages', {
-	id: text('id').primaryKey(),
-	chatId: text('chat_id')
-		.notNull()
-		.references(() => chats.id),
-	role: text('role', { enum: ['user', 'assistant'] }).notNull(),
-	contents: text('contents').notNull().default('[]'),
-	createdAt: integer('created_at', { mode: 'timestamp' })
-		.notNull()
-		.default(sql`(unixepoch())`)
-});
-
-export const workflows = sqliteTable('workflows', {
-	id: text('id').primaryKey(),
-	name: text('name').notNull(),
-	steps: text('steps').notNull().default('[]'),
-	triggerHour: integer('trigger_hour').notNull(),
-	triggerMinute: integer('trigger_minute').notNull(),
-	enabled: integer('enabled', { mode: 'boolean' }).notNull().default(false),
-	accountId: text('account_id'),
-	createdAt: integer('created_at', { mode: 'timestamp' })
-		.notNull()
-		.default(sql`(unixepoch())`),
-	updatedAt: integer('updated_at', { mode: 'timestamp' })
-		.notNull()
-		.default(sql`(unixepoch())`)
-});
-
-export const workflowRuns = sqliteTable('workflow_runs', {
-	id: text('id').primaryKey(),
-	workflowId: text('workflow_id').notNull(),
-	ok: integer('ok', { mode: 'boolean' }).notNull(),
-	error: text('error'),
-	startedAt: integer('started_at', { mode: 'timestamp' }).notNull(),
-	finishedAt: integer('finished_at', { mode: 'timestamp' }).notNull()
-});
 
 export type EmailProviderSettings = typeof emailProviders.$inferSelect;
 export type NewEmailProviderSettings = typeof emailProviders.$inferInsert;
@@ -165,7 +117,3 @@ export type Notification = typeof notifications.$inferSelect;
 export type NewNotification = typeof notifications.$inferInsert;
 export type Reminder = typeof reminders.$inferSelect;
 export type NewReminder = typeof reminders.$inferInsert;
-export type Workflow = typeof workflows.$inferSelect;
-export type NewWorkflow = typeof workflows.$inferInsert;
-export type WorkflowRun = typeof workflowRuns.$inferSelect;
-export type NewWorkflowRun = typeof workflowRuns.$inferInsert;

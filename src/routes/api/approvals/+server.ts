@@ -16,7 +16,7 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 	const db = createDb(platform.env.DB);
 	try {
 		const data = await request.json() as Parameters<typeof createApproval>[1];
-		const row = await createApproval(db, { ...data, submittedBy: locals.account!.name });
+		const row = await createApproval(db, { ...data, submittedByAccountId: locals.account!.id });
 		return json(row, { status: 201 });
 	} catch (e) {
 		return json({ error: e instanceof Error ? e.message : String(e) }, { status: 400 });

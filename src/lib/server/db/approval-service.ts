@@ -1,5 +1,5 @@
 import { eq, desc } from 'drizzle-orm';
-import { approvalRequests } from './schema';
+import { approvalRequests, accounts } from './schema';
 import type { Db } from '.';
 
 export type ApprovalStep = {
@@ -27,7 +27,8 @@ export type ApprovalRow = {
 	id: string;
 	title: string;
 	status: 'draft' | 'pending' | 'approved' | 'rejected' | 'cancelled';
-	submittedBy: string;
+	submittedBy: string;          // resolved display name
+	submittedByAccountId: string; // account ID stored in DB
 	content: string;
 	returnComment?: string;
 	route: ApprovalStep[];
@@ -44,13 +45,14 @@ function parseJson<T>(raw: string, fallback: T): T {
 	try { return JSON.parse(raw) ?? fallback; } catch { return fallback; }
 }
 
-function toRow(r: typeof approvalRequests.$inferSelect): ApprovalRow {
+function toRow(r: typeof approvalRequests.$inferSelect, submitterName?: string | null): ApprovalRow {
 	const data = parseJson<Record<string, unknown>>(r.data, {});
 	const row: ApprovalRow = {
 		id: r.id,
 		title: r.title,
 		status: r.status as ApprovalRow['status'],
-		submittedBy: r.submittedBy,
+		submittedByAccountId: r.submittedBy,
+		submittedBy: submitterName ?? r.submittedBy, // resolved name, fallback to raw value
 		content: String(data.content ?? ''),
 		route: parseJson<ApprovalStep[]>(r.route, []),
 		attachments: parseJson<Attachment[]>(r.attachments, []),
@@ -61,8 +63,8 @@ function toRow(r: typeof approvalRequests.$inferSelect): ApprovalRow {
 	return row;
 }
 
-function toListRow(r: typeof approvalRequests.$inferSelect): ApprovalListRow {
-	const full = toRow(r);
+function toListRow(r: typeof approvalRequests.$inferSelect, submitterName?: string | null): ApprovalListRow {
+	const full = toRow(r, submitterName);
 	return {
 		...full,
 		attachments: full.attachments.map(({ data: _data, ...meta }) => meta)
@@ -80,30 +82,35 @@ export async function listApprovals(
 	db: Db,
 	filters?: { status?: string[] }
 ): Promise<ApprovalListRow[]> {
-	const rows = await db
-		.select()
-		.from(approvalRequests)
-		.orderBy(desc(approvalRequests.createdAt));
+	const [approvalRows, accountRows] = await Promise.all([
+		db.select().from(approvalRequests).orderBy(desc(approvalRequests.createdAt)),
+		db.select({ id: accounts.id, name: accounts.name }).from(accounts)
+	]);
 
-	return rows
+	const accountMap = new Map(accountRows.map(a => [a.id, a.name]));
+
+	return approvalRows
 		.filter(r => {
 			if (filters?.status?.length && !filters.status.includes(r.status)) return false;
 			return true;
 		})
-		.map(toListRow);
+		.map(r => toListRow(r, accountMap.get(r.submittedBy)));
 }
 
 export async function getApproval(db: Db, id: string): Promise<ApprovalRow | null> {
-	const [r] = await db
-		.select()
-		.from(approvalRequests)
-		.where(eq(approvalRequests.id, id));
-	return r ? toRow(r) : null;
+	const [r] = await db.select().from(approvalRequests).where(eq(approvalRequests.id, id));
+	if (!r) return null;
+	let submitterName: string | undefined;
+	if (r.submittedBy) {
+		const [account] = await db.select({ name: accounts.name }).from(accounts).where(eq(accounts.id, r.submittedBy));
+		if (account) submitterName = account.name;
+	}
+	return toRow(r, submitterName);
 }
 
 export type CreateApprovalInput = {
 	title: string;
-	submittedBy?: string;
+	submittedByAccountId?: string;
 	content?: string;
 	status?: 'draft' | 'pending';
 	route: Array<{ step: number; accountId?: string; approver: string; email?: string; role?: string }>;
@@ -130,7 +137,7 @@ export async function createApproval(db: Db, input: CreateApprovalInput): Promis
 		id,
 		title: input.title,
 		type: '申請',
-		submittedBy: input.submittedBy ?? '',
+		submittedBy: input.submittedByAccountId ?? '',
 		entityType: null,
 		entityId: null,
 		data: JSON.stringify({ content: input.content ?? '' }),

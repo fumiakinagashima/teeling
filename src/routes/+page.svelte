@@ -40,7 +40,7 @@
 					}
 					return (
 						r.route.some((s) => s.accountId === data.accountId) ||
-						r.submittedBy === data.account?.name
+						r.submittedByAccountId === data.accountId
 					);
 				})
 			: baseRows
@@ -68,7 +68,7 @@
 					if (r.status !== 'draft') return false;
 					return (
 						r.route.some((s) => s.accountId === data.accountId) ||
-						r.submittedBy === data.account?.name
+						r.submittedByAccountId === data.accountId
 					);
 				}).length
 			: draftCount

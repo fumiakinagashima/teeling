@@ -147,7 +147,7 @@ export async function handleCreateApproval(db: Db, input: unknown, env?: ToolEnv
 	const p = createApprovalSchema.parse(input);
 	return createApproval(db, {
 		title: p.title,
-		submittedBy: p.submitted_by ?? env?.accountName ?? '',
+		submittedByAccountId: env?.accountId ?? '',
 		content: p.content,
 		route: p.route
 	});
