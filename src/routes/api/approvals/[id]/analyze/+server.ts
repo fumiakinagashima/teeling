@@ -26,7 +26,7 @@ export const POST: RequestHandler = async ({ params, platform }) => {
 	try {
 		const message = await anthropic.messages.create({
 			model: 'claude-haiku-4-5-20251001',
-			max_tokens: 1500,
+			max_tokens: 2000,
 			system: ANALYSIS_SYSTEM_PROMPT,
 			messages: [{ role: 'user', content: buildAnalysisPrompt(row) }]
 		});

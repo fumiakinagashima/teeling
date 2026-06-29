@@ -114,7 +114,7 @@
 		<textarea
 			class="sim-input"
 			placeholder="数値を変えて試算（Enterで送信）"
-			rows="2"
+			rows="5"
 			bind:value={input}
 			onkeydown={onKeydown}
 			disabled={loading}

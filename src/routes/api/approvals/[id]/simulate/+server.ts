@@ -36,7 +36,7 @@ ${row.content || '（記載なし）'}
 ## 初期分析結果
 リスク: ${body.analysis.riskLevel}
 総評: ${body.analysis.reviewSummary}
-${body.analysis.keyFigures.length > 0 ? `\n主要数値:\n${body.analysis.keyFigures.map((f) => `- ${f.label}: ${f.value}（「${f.quote}」）`).join('\n')}` : ''}
+${(body.analysis.keyFigures ?? []).length > 0 ? `\n主要数値:\n${(body.analysis.keyFigures ?? []).map((f) => `- ${f.label}: ${f.value}（「${f.quote}」）`).join('\n')}` : ''}
 ${body.analysis.roi ? `ROI: ${body.analysis.roi}（${body.analysis.roiFormula}）` : ''}
 ${body.analysis.paybackPeriod ? `回収期間: ${body.analysis.paybackPeriod}（${body.analysis.paybackFormula}）` : ''}`;
 
