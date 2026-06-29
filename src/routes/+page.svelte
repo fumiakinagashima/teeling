@@ -162,7 +162,46 @@
 		</label>
 	</div>
 
-	{#if rows.length === 0}
+	{#if data.rows.length === 0}
+		<div class="welcome-guide">
+			<h2 class="welcome-title">Teelingへようこそ</h2>
+			<p class="welcome-desc">AIと一緒に申請を作成し、承認サイクルを短縮しましょう。</p>
+			<div class="flow-steps">
+				<div class="flow-step">
+					<div class="flow-icon">💬</div>
+					<div class="flow-step-body">
+						<h3>AIと相談しながら申請を作成</h3>
+						<p>「出張申請を作って」と話しかけるだけ。AIが内容を整理して申請書を作成します。</p>
+					</div>
+				</div>
+				<div class="flow-arrow">→</div>
+				<div class="flow-step">
+					<div class="flow-icon">🔍</div>
+					<div class="flow-step-body">
+						<h3>AIが申請内容をレビュー</h3>
+						<p>AIが問題点・改善点を指摘。承認者に回す前に内容を磨けます。</p>
+					</div>
+				</div>
+				<div class="flow-arrow">→</div>
+				<div class="flow-step">
+					<div class="flow-icon">📊</div>
+					<div class="flow-step-body">
+						<h3>判断材料を自動生成</h3>
+						<p>AIがROI・回収期間などの財務的判断材料を計算。承認者がすぐに判断できます。</p>
+					</div>
+				</div>
+				<div class="flow-arrow">→</div>
+				<div class="flow-step">
+					<div class="flow-icon">✅</div>
+					<div class="flow-step-body">
+						<h3>承認・完了</h3>
+						<p>承認者が確認して承認。結果が申請者に即時通知されます。</p>
+					</div>
+				</div>
+			</div>
+			<a href="/approvals/new" class="btn-primary">+ 最初の申請を作成する</a>
+		</div>
+	{:else if rows.length === 0}
 		<div class="empty">
 			{#if filter === 'pending'}
 				<p class="empty-title">承認待ちの申請はありません</p>
@@ -171,9 +210,8 @@
 				<p class="empty-title">作成中の申請はありません</p>
 				<p class="empty-desc">下書き保存した申請がここに表示されます。</p>
 			{:else}
-				<p class="empty-title">申請がまだありません</p>
-				<p class="empty-desc">「新規申請」から最初の申請を作成してみましょう。</p>
-				<a href="/approvals/new" class="btn-primary">+ 最初の申請を作成</a>
+				<p class="empty-title">担当中の申請はありません</p>
+				<p class="empty-desc">フィルターを変更するか、新規申請を作成してみましょう。</p>
 			{/if}
 		</div>
 	{:else}
@@ -462,6 +500,75 @@
 			color: var(--color-neutral);
 			border-color: var(--color-neutral);
 		}
+	}
+
+	.welcome-guide {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 24px;
+		margin-top: 16px;
+		padding: 32px;
+		border: 1px solid var(--color-border);
+		border-radius: 12px;
+		background: var(--color-surface);
+	}
+	.welcome-title {
+		font-size: 1.125rem;
+		font-weight: 700;
+		margin: 0;
+	}
+	.welcome-desc {
+		font-size: 0.9375rem;
+		color: var(--color-text-muted);
+		margin: -16px 0 0;
+		line-height: 1.6;
+	}
+	.flow-steps {
+		display: flex;
+		align-items: flex-start;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+	.flow-step {
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+		padding: 16px;
+		border: 1px solid var(--color-border);
+		border-radius: 10px;
+		background: var(--color-background);
+		width: 200px;
+		flex-shrink: 0;
+	}
+	.flow-icon {
+		font-size: 1.5rem;
+		line-height: 1;
+		flex-shrink: 0;
+	}
+	.flow-step-body {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+
+		h3 {
+			font-size: 0.8125rem;
+			font-weight: 600;
+			margin: 0;
+			line-height: 1.4;
+		}
+		p {
+			font-size: 0.8125rem;
+			color: var(--color-text-muted);
+			margin: 0;
+			line-height: 1.5;
+		}
+	}
+	.flow-arrow {
+		font-size: 1.25rem;
+		color: var(--color-text-muted);
+		padding-top: 20px;
+		flex-shrink: 0;
 	}
 
 	.empty {
