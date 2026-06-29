@@ -55,6 +55,42 @@
 	let analysisLoading = $state(false);
 	let analysisError = $state('');
 
+	type ApprovalMetricsResult = {
+		summary: string;
+		keyFigures: { label: string; value: string; quote?: string }[];
+		roi: string | null;
+		roiFormula: string | null;
+		paybackPeriod: string | null;
+		paybackFormula: string | null;
+		riskPoints: string[];
+		dataQuality: 'low' | 'medium' | 'high';
+		missingData: string[];
+	};
+
+	let metrics = $state<ApprovalMetricsResult | null>(null);
+	let metricsLoading = $state(false);
+	let metricsError = $state('');
+
+	async function runMetrics() {
+		if (!row || metricsLoading) return;
+		metricsLoading = true;
+		metricsError = '';
+		metrics = null;
+		try {
+			const res = await fetch(`/api/approvals/${row.id}/metrics`, { method: 'POST' });
+			const result = await res.json() as ApprovalMetricsResult & { error?: string };
+			if (!res.ok) {
+				metricsError = result.error ?? '判断材料の生成に失敗しました。';
+				return;
+			}
+			metrics = result;
+		} catch (e) {
+			metricsError = e instanceof Error ? e.message : String(e);
+		} finally {
+			metricsLoading = false;
+		}
+	}
+
 	async function runAnalysis() {
 		if (!row || analysisLoading) return;
 		analysisLoading = true;
@@ -286,6 +322,67 @@
 				{/if}
 			</section>
 		{/if}
+
+		<!-- 判断材料 -->
+		<section class="section">
+			<div class="section-head">
+				<h2 class="section-title">判断材料</h2>
+				<button class="btn-ai-review" onclick={runMetrics} disabled={metricsLoading}>
+					{#if metricsLoading}生成中...{:else if metrics}↻ 再生成{:else}✨ 判断材料を生成{/if}
+				</button>
+			</div>
+			{#if metricsError}
+				<p class="ai-review-error">{metricsError}</p>
+			{/if}
+			{#if metrics}
+				<div class="metrics-box">
+					<p class="metrics-summary">{metrics.summary}</p>
+					<div class="metrics-badges">
+						<span class="data-quality-badge dq-{metrics.dataQuality}">
+							データ充足度: {metrics.dataQuality === 'high' ? '高' : metrics.dataQuality === 'medium' ? '中' : '低'}
+						</span>
+						{#if metrics.roi}<span class="kpi-pill">ROI {metrics.roi}</span>{/if}
+						{#if metrics.paybackPeriod}<span class="kpi-pill">回収期間 {metrics.paybackPeriod}</span>{/if}
+					</div>
+					{#if metrics.keyFigures.length > 0}
+						<div class="kpi-cards">
+							{#each metrics.keyFigures as fig}
+								<div class="kpi-card">
+									<span class="kpi-label">{fig.label}</span>
+									<span class="kpi-value">{fig.value}</span>
+									{#if fig.quote}<span class="kpi-desc">「{fig.quote}」</span>{/if}
+								</div>
+							{/each}
+						</div>
+					{/if}
+					{#if metrics.roiFormula || metrics.paybackFormula}
+						<div class="ai-review-group">
+							<h3 class="ai-review-group-title">計算式</h3>
+							<ul class="formula-list">
+								{#if metrics.roiFormula}<li>ROI: {metrics.roiFormula}</li>{/if}
+								{#if metrics.paybackFormula}<li>回収期間: {metrics.paybackFormula}</li>{/if}
+							</ul>
+						</div>
+					{/if}
+					{#if metrics.riskPoints.length > 0}
+						<div class="ai-review-group">
+							<h3 class="ai-review-group-title">リスクポイント</h3>
+							<ul class="ai-review-list ai-review-concerns">
+								{#each metrics.riskPoints as item}<li>{item}</li>{/each}
+							</ul>
+						</div>
+					{/if}
+					{#if metrics.missingData.length > 0}
+						<div class="ai-review-group">
+							<h3 class="ai-review-group-title">精度向上に必要な情報</h3>
+							<ul class="ai-review-list ai-review-checks">
+								{#each metrics.missingData as item}<li>{item}</li>{/each}
+							</ul>
+						</div>
+					{/if}
+				</div>
+			{/if}
+		</section>
 
 		<!-- Attachments -->
 		{#if row.attachments.length > 0}
@@ -578,6 +675,17 @@
 	.kpi-label { font-size: 0.75rem; color: var(--color-text-muted); font-weight: 500; }
 	.kpi-value { font-size: 1rem; font-weight: 700; color: var(--color-text); }
 	.kpi-desc { font-size: 0.72rem; color: var(--color-text-muted); font-style: italic; }
+	.metrics-box {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 14px 16px;
+		border: 1px solid var(--color-border);
+		border-radius: 8px;
+		background: color-mix(in srgb, var(--color-success) 3%, var(--color-surface));
+	}
+	.metrics-summary { margin: 0; font-size: 0.9375rem; line-height: 1.7; }
+
 	.formula-list {
 		margin: 0;
 		padding-left: 1.4em;
