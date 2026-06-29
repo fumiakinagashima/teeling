@@ -92,12 +92,13 @@
 	}
 
 	.logo {
-		font-size: 1rem;
+		font-size: 1.0625rem;
 		font-weight: 700;
 		color: var(--color-primary);
 		text-decoration: none;
-		letter-spacing: -0.01em;
+		letter-spacing: 0.08em;
 		font-family: Georgia, 'Times New Roman', Times, serif;
+		text-transform: uppercase;
 	}
 
 	.nav {

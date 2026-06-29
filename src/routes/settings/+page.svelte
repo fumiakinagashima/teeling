@@ -66,11 +66,11 @@
 	</section>
 
 	<section>
-		<h2>{m.settings_chat()}</h2>
+		<h2>AIアシスタント</h2>
 		<div class="row">
 			<div class="row-info">
 				<span class="label">{m.settings_enter_to_send()}</span>
-				<span class="desc">{m.settings_enter_to_send_desc()}</span>
+				<span class="desc">申請作成・確認ダイアログのAIチャットに適用されます（改行は Shift+Enter）</span>
 			</div>
 			<Toggle bind:checked={enterToSend} />
 		</div>
