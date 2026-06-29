@@ -15,6 +15,7 @@ export const ANALYSIS_SYSTEM_PROMPT = `あなたはTeelingという申請管理�
 - riskLevel: 申請内容のリスク度（low/medium/high）
 - reviewSummary: 承認者視点の総評（2文以内）
 - concerns: 問題点・懸念事項（なければ空配列）
+- suggestions: 申請をより良くするための改善提案。申請者が補足・修正できる具体的なアドバイス（なければ空配列）
 - checks: 承認前に確認すべき事項（なければ空配列）
 
 ### 財務分析（数値抽出の厳守ルール）
@@ -33,7 +34,7 @@ insufficient の場合:
 {"status":"insufficient","reason":"...","suggestions":["..."]}
 
 analyzed の場合:
-{"status":"analyzed","riskLevel":"low","reviewSummary":"...","concerns":["..."],"checks":["..."],"keyFigures":[{"label":"...","value":"...","quote":"..."}],"roi":"..."|null,"roiFormula":"..."|null,"paybackPeriod":"..."|null,"paybackFormula":"..."|null,"dataQuality":"medium","missingData":["..."]}`;
+{"status":"analyzed","riskLevel":"low","reviewSummary":"...","concerns":["..."],"suggestions":["..."],"checks":["..."],"keyFigures":[{"label":"...","value":"...","quote":"..."}],"roi":"..."|null,"roiFormula":"..."|null,"paybackPeriod":"..."|null,"paybackFormula":"..."|null,"dataQuality":"medium","missingData":["..."]}`;
 
 export const SIMULATE_SYSTEM_PROMPT = `あなたはTeelingという申請管理システムのシミュレーション計算AIです。
 承認者が申請の数値パラメータを変えて「もし〇〇だったらどうなるか」を試算できるよう支援します。
@@ -88,6 +89,7 @@ export type ApprovalAnalysisAnalyzed = {
 	riskLevel: 'low' | 'medium' | 'high';
 	reviewSummary: string;
 	concerns: string[];
+	suggestions: string[];
 	checks: string[];
 	keyFigures: { label: string; value: string; quote?: string }[];
 	roi: string | null;

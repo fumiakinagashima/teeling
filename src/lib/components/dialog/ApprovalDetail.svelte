@@ -257,6 +257,14 @@
 										</ul>
 									</div>
 								{/if}
+								{#if analysis.suggestions?.length > 0}
+									<div class="ai-review-group">
+										<h3 class="ai-review-group-title">改善提案</h3>
+										<ul class="ai-review-list ai-review-suggestions">
+											{#each analysis.suggestions as item}<li>{item}</li>{/each}
+										</ul>
+									</div>
+								{/if}
 								{#if analysis.checks.length > 0}
 									<div class="ai-review-group">
 										<h3 class="ai-review-group-title">確認事項</h3>
@@ -636,6 +644,7 @@
 	}
 	.ai-review-list { margin: 0; padding-left: 1.4em; font-size: 0.875rem; line-height: 1.7; display: flex; flex-direction: column; gap: 4px; }
 	.ai-review-concerns li::marker { color: var(--color-error); }
+	.ai-review-suggestions li::marker { color: var(--color-info, var(--color-primary)); }
 	.ai-review-checks li::marker { color: var(--color-warning); }
 
 	.metrics-badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
