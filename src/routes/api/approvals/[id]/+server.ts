@@ -10,6 +10,11 @@ import {
 	saveDraftApproval,
 	updateApprovalContent
 } from '$lib/server/db/approval-service';
+import { getEmailSetupFromEnv } from '$lib/server/email';
+import {
+	notifyAfterStepAction,
+	notifyApplicantOnReturn
+} from '$lib/server/approvals/email-notifications';
 
 export const GET: RequestHandler = async ({ params, platform }) => {
 	if (!platform?.env?.DB) return json({ error: 'DB not available' }, { status: 500 });
@@ -19,7 +24,7 @@ export const GET: RequestHandler = async ({ params, platform }) => {
 	return json(row);
 };
 
-export const PATCH: RequestHandler = async ({ params, request, platform, locals }) => {
+export const PATCH: RequestHandler = async ({ params, request, url, platform, locals }) => {
 	if (!platform?.env?.DB) return json({ error: 'DB not available' }, { status: 500 });
 	const db = createDb(platform.env.DB);
 	try {
@@ -33,15 +38,21 @@ export const PATCH: RequestHandler = async ({ params, request, platform, locals 
 			route?: RouteEntry[];
 		};
 		const account = locals.account!;
+		const emailSetup = getEmailSetupFromEnv(platform.env);
 		let row;
 		if (body.action === 'approve_step' || body.action === 'reject_step') {
 			if (body.step == null) return json({ error: 'step is required' }, { status: 400 });
+			const prevApproval = await getApproval(db, params.id);
+			const prevRoute = prevApproval?.route ?? [];
 			row = await updateApprovalStep(
 				db, params.id, body.step,
 				body.action === 'approve_step' ? 'approve' : 'reject',
 				account.id,
 				body.comment
 			);
+			if (emailSetup) {
+				notifyAfterStepAction(db, emailSetup, prevRoute, row, url.origin).catch(() => {});
+			}
 		} else if (body.action === 'cancel') {
 			const existing = await getApproval(db, params.id);
 			if (!existing) return json({ error: '申請が見つかりません' }, { status: 404 });
@@ -57,6 +68,9 @@ export const PATCH: RequestHandler = async ({ params, request, platform, locals 
 			);
 			if (!isDesignatedApprover) return json({ error: '権限がありません' }, { status: 403 });
 			row = await returnApproval(db, params.id, body.comment);
+			if (emailSetup) {
+				notifyApplicantOnReturn(db, emailSetup, row, body.comment, url.origin).catch(() => {});
+			}
 		} else if (body.action === 'save_draft') {
 			const existing = await getApproval(db, params.id);
 			if (!existing) return json({ error: '申請が見つかりません' }, { status: 404 });
