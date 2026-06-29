@@ -14,7 +14,7 @@ export type TemplateRow = {
 	description: string | null;
 	bodyFormat: string;
 	customFields: CustomFieldDef[];
-	defaultRoute: { step: number; approver: string; role?: string; email?: string }[];
+	defaultRoute: { step: number; accountId?: string; approver: string; role?: string; email?: string }[];
 	createdAt: Date;
 	updatedAt: Date;
 };

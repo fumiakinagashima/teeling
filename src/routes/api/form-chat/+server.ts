@@ -7,6 +7,8 @@ import { createDb } from '$lib/server/db';
 import { dispatchTool, type ToolEnv } from '$lib/server/mcp';
 import type { StreamEvent } from '$lib/server/ai/stream';
 import { readonlyTools } from '$lib/server/ai/readonly-tools';
+import { checkRateLimit } from '$lib/server/rate-limit';
+import { errors } from '$lib/server/errors';
 
 function sse(event: StreamEvent): string {
 	return `data: ${JSON.stringify(event)}\n\n`;
@@ -14,6 +16,12 @@ function sse(event: StreamEvent): string {
 
 export const POST: RequestHandler = async ({ request, platform, locals }) => {
 	const mockMode = platform?.env?.MOCK_AI === 'true' || env.MOCK_AI === 'true';
+
+	if (!mockMode) {
+		const ip = request.headers.get('CF-Connecting-IP') ?? request.headers.get('X-Forwarded-For') ?? 'unknown';
+		const rl = await checkRateLimit(platform?.env?.KV, 'form-chat', ip);
+		if (!rl.allowed) return errors.tooManyRequests(rl.retryAfter ?? 60);
+	}
 
 	const body = (await request.json()) as {
 		message: string;

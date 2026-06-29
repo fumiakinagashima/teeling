@@ -30,6 +30,7 @@ export type ApprovalRow = {
 	submittedBy: string;          // resolved display name
 	submittedByAccountId: string; // account ID stored in DB
 	content: string;
+	templateId?: string;
 	returnComment?: string;
 	route: ApprovalStep[];
 	attachments: Attachment[];
@@ -61,6 +62,7 @@ function toRow(r: typeof approvalRequests.$inferSelect, submitterName?: string |
 		createdAt: r.createdAt,
 		updatedAt: r.updatedAt
 	};
+	if (data.templateId) row.templateId = String(data.templateId);
 	if (data.returnComment) row.returnComment = String(data.returnComment);
 	if (data.fields) row.fields = data.fields as Record<string, unknown>;
 	if (data.fieldDefs) row.fieldDefs = data.fieldDefs as { key: string; label: string; type: string }[];
@@ -232,7 +234,13 @@ export async function returnApproval(db: Db, id: string, comment?: string): Prom
 		comment: null,
 		acted_at: null
 	}));
-	const data = { content: existing.content, ...(comment ? { returnComment: comment } : {}) };
+	const data = {
+		content: existing.content,
+		...(existing.templateId && { templateId: existing.templateId }),
+		...(existing.fieldDefs && { fieldDefs: existing.fieldDefs }),
+		...(existing.fields && { fields: existing.fields }),
+		...(comment ? { returnComment: comment } : {})
+	};
 
 	await db
 		.update(approvalRequests)
@@ -266,7 +274,13 @@ export async function saveDraftApproval(db: Db, id: string, input: ContentInput)
 		.update(approvalRequests)
 		.set({
 			title: newTitle,
-			data: JSON.stringify({ content: newContent }),
+			data: JSON.stringify({
+				content: newContent,
+				...(existing.templateId && { templateId: existing.templateId }),
+				...(existing.returnComment && { returnComment: existing.returnComment }),
+				...(existing.fieldDefs && { fieldDefs: existing.fieldDefs }),
+				...(existing.fields && { fields: existing.fields })
+			}),
 			route: JSON.stringify(route),
 			status: 'draft',
 			updatedAt: new Date()
@@ -294,7 +308,12 @@ export async function updateApprovalContent(db: Db, id: string, input: ContentIn
 		.update(approvalRequests)
 		.set({
 			title: newTitle,
-			data: JSON.stringify({ content: newContent }),
+			data: JSON.stringify({
+				content: newContent,
+				...(existing.templateId && { templateId: existing.templateId }),
+				...(existing.fieldDefs && { fieldDefs: existing.fieldDefs }),
+				...(existing.fields && { fields: existing.fields })
+			}),
 			route: JSON.stringify(route),
 			status: 'pending',
 			updatedAt: new Date()

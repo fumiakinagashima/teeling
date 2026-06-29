@@ -69,7 +69,12 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 	};
 
 	// フォーム送信（tool + data）はJSONで返す
+	// 明示的に許可したツールのみ呼び出し可能（クイックアクション経由の直接実行用）
+	const ALLOWED_FORM_TOOLS = new Set(['create_approval', 'create_reminder', 'send_email']);
 	if (body.tool && body.data) {
+		if (!ALLOWED_FORM_TOOLS.has(body.tool)) {
+			return json({ error: '無効なツールです' }, { status: 400 });
+		}
 		try {
 			const result = await dispatchTool(db, body.tool as never, body.data, toolEnv, platform.ctx);
 
