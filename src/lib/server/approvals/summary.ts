@@ -12,9 +12,16 @@ function buildSummaryText(approvals: Awaited<ReturnType<typeof listApprovals>>):
 	return lines.join('\n');
 }
 
-export async function processApprovalSummary(db: Db): Promise<{ notified: number }> {
+export type SummaryResult = {
+	notified: number;
+	approvalCount: number;
+	summaryTitle: string;
+	summaryLines: string[];
+};
+
+export async function processApprovalSummary(db: Db): Promise<SummaryResult> {
 	const pending = await listApprovals(db, { status: ['pending'] });
-	if (pending.length === 0) return { notified: 0 };
+	if (pending.length === 0) return { notified: 0, approvalCount: 0, summaryTitle: '', summaryLines: [] };
 
 	const allAccounts = await listAccounts(db);
 	const adminIds = new Set(allAccounts.filter((a) => a.permission === 'admin').map((a) => a.id));
@@ -22,6 +29,7 @@ export async function processApprovalSummary(db: Db): Promise<{ notified: number
 	const summaryText = buildSummaryText(pending);
 	const title = `承認待ち申請サマリー（${pending.length}件）`;
 	const seedContent = [{ type: 'text' as const, text: summaryText }];
+	const summaryLines = summaryText.split('\n');
 
 	const notifiedIds = new Set<string>();
 
@@ -54,5 +62,5 @@ export async function processApprovalSummary(db: Db): Promise<{ notified: number
 		notifiedIds.add(accountId);
 	}
 
-	return { notified: notifiedIds.size };
+	return { notified: notifiedIds.size, approvalCount: pending.length, summaryTitle: title, summaryLines };
 }
