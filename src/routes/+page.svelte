@@ -1,9 +1,8 @@
 <script lang="ts">
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import type { ApprovalListRow } from '$lib/server/db/approval-service';
 	import type { PageData } from './$types';
 	import * as m from '$lib/paraglide/messages.js';
-	import { toast } from '$lib/stores/toast.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -88,38 +87,13 @@
 		}).length
 	);
 
-	type SummaryResult = { notified: number; approvalCount: number; summaryTitle: string; summaryLines: string[] };
-	let summarySending = $state(false);
-	let summaryResult = $state<SummaryResult | null>(null);
-
-	async function sendSummary() {
-		if (summarySending) return;
-		summarySending = true;
-		try {
-			const res = await fetch('/api/approvals/pending-summary', { method: 'POST' });
-			const result = await res.json() as SummaryResult & { error?: string };
-			if (!res.ok) {
-				toast.error((result as { error?: string }).error ?? 'サマリーの配信に失敗しました');
-			} else {
-				summaryResult = result;
-				await invalidateAll();
-			}
-		} finally {
-			summarySending = false;
-		}
-	}
 </script>
 
 <div class="page">
 	<header class="page-header">
 		<h1>申請一覧</h1>
 		<div class="header-actions">
-			{#if data.account?.permission === 'admin'}
-				<button class="btn-secondary" onclick={sendSummary} disabled={summarySending}>
-					{summarySending ? '配信中...' : '📨 サマリーを配信'}
-				</button>
-			{/if}
-			<a href="/approvals/new" class="btn-primary">+ 新規申請</a>
+				<a href="/approvals/new" class="btn-primary">+ 新規申請</a>
 		</div>
 	</header>
 
@@ -249,23 +223,6 @@
 	{/if}
 </div>
 
-{#if summaryResult}
-	<div class="summary-modal-overlay" onclick={() => (summaryResult = null)}>
-		<div class="summary-modal" onclick={(e) => e.stopPropagation()}>
-			<div class="summary-modal-head">
-				<h2 class="summary-modal-title">{summaryResult.summaryTitle}</h2>
-				<button class="summary-modal-close" onclick={() => (summaryResult = null)}>✕</button>
-			</div>
-			<p class="summary-modal-meta">{summaryResult.notified}名に通知を配信しました</p>
-			<div class="summary-modal-body">
-				{#each summaryResult.summaryLines as line}
-					<p class="summary-line">{line}</p>
-				{/each}
-			</div>
-		</div>
-	</div>
-{/if}
-
 <style lang="scss">
 	.page {
 		padding: 24px 32px;
@@ -302,20 +259,6 @@
 		text-decoration: none;
 		cursor: pointer;
 		white-space: nowrap;
-	}
-
-	.btn-secondary {
-		padding: 7px 14px;
-		background: none;
-		border: 1px solid var(--color-border);
-		color: var(--color-text);
-		border-radius: 6px;
-		font-size: 0.875rem;
-		cursor: pointer;
-		white-space: nowrap;
-		transition: background 0.15s;
-		&:hover { background: var(--color-surface); }
-		&:disabled { opacity: 0.5; cursor: not-allowed; }
 	}
 
 	.stats-row {
@@ -611,67 +554,4 @@
 		line-height: 1.6;
 	}
 
-	.summary-modal-overlay {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.4);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 100;
-	}
-	.summary-modal {
-		background: var(--color-surface);
-		border: 1px solid var(--color-border);
-		border-radius: 12px;
-		padding: 24px;
-		width: min(480px, 94vw);
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-		max-height: 80vh;
-		overflow: hidden;
-	}
-	.summary-modal-head {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 12px;
-	}
-	.summary-modal-title {
-		font-size: 1rem;
-		font-weight: 600;
-		margin: 0;
-	}
-	.summary-modal-close {
-		border: none;
-		background: none;
-		font-size: 1rem;
-		color: var(--color-text-muted);
-		cursor: pointer;
-		padding: 2px 6px;
-		flex-shrink: 0;
-	}
-	.summary-modal-close:hover { color: var(--color-text); }
-	.summary-modal-meta {
-		margin: 0;
-		font-size: 0.8125rem;
-		color: var(--color-text-muted);
-	}
-	.summary-modal-body {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-		overflow-y: auto;
-		padding: 12px 14px;
-		border: 1px solid var(--color-border);
-		border-radius: 8px;
-		background: var(--color-background);
-	}
-	.summary-line {
-		margin: 0;
-		font-size: 0.875rem;
-		line-height: 1.6;
-		white-space: pre-wrap;
-	}
 </style>
