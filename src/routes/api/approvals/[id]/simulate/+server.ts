@@ -40,10 +40,22 @@ ${(body.analysis.keyFigures ?? []).length > 0 ? `\n主要数値:\n${(body.analys
 ${body.analysis.roi ? `ROI: ${body.analysis.roi}（${body.analysis.roiFormula}）` : ''}
 ${body.analysis.paybackPeriod ? `回収期間: ${body.analysis.paybackPeriod}（${body.analysis.paybackFormula}）` : ''}`;
 
-	const messages: Anthropic.MessageParam[] = body.history.flatMap((msg) => [
-		{ role: msg.role, content: msg.text } as Anthropic.MessageParam
-	]);
-	messages.push({ role: 'user', content: body.message });
+	// 会話履歴をキャッシュ: 最後の履歴メッセージに cache_control を付与
+	const historyParams: Anthropic.MessageParam[] = body.history.map((msg) => ({
+		role: msg.role,
+		content: msg.text
+	}));
+	let messages: Anthropic.MessageParam[];
+	if (historyParams.length > 0) {
+		const last = historyParams[historyParams.length - 1];
+		const cachedLast: Anthropic.MessageParam = {
+			...last,
+			content: [{ type: 'text', text: last.content as string, cache_control: { type: 'ephemeral' } }]
+		};
+		messages = [...historyParams.slice(0, -1), cachedLast, { role: 'user', content: body.message }];
+	} else {
+		messages = [{ role: 'user', content: body.message }];
+	}
 
 	const anthropic = new Anthropic({ apiKey, timeout: 30000 });
 
@@ -54,7 +66,7 @@ ${body.analysis.paybackPeriod ? `回収期間: ${body.analysis.paybackPeriod}（
 				const stream = anthropic.messages.stream({
 					model: 'claude-haiku-4-5-20251001',
 					max_tokens: 800,
-					system: systemContext,
+					system: [{ type: 'text', text: systemContext, cache_control: { type: 'ephemeral' } }],
 					messages
 				});
 				for await (const event of stream) {

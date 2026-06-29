@@ -27,7 +27,7 @@ export const POST: RequestHandler = async ({ params, platform }) => {
 		const message = await anthropic.messages.create({
 			model: 'claude-haiku-4-5-20251001',
 			max_tokens: 2000,
-			system: ANALYSIS_SYSTEM_PROMPT,
+			system: [{ type: 'text', text: ANALYSIS_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
 			messages: [{ role: 'user', content: buildAnalysisPrompt(row) }]
 		});
 		text = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '';

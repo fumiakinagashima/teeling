@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { MessageParam } from '@anthropic-ai/sdk/resources/messages';
+import type { MessageParam, TextBlockParam } from '@anthropic-ai/sdk/resources/messages';
 import { buildSystemPrompt } from './prompt';
 import { tools as allTools, dispatchTool } from '$lib/server/mcp';
 
@@ -150,11 +150,16 @@ export async function streamChat(
 		let currentTool: { id: string; name: string; inputJson: string } | null = null;
 		const turnEvents: StreamEvent[] = [];
 
+		const cachedSystem: TextBlockParam[] = [{ type: 'text', text: buildSystemPrompt(), cache_control: { type: 'ephemeral' } }];
+		const cachedTools = tools.length > 0
+			? [...tools.slice(0, -1), { ...tools[tools.length - 1], cache_control: { type: 'ephemeral' as const } }]
+			: tools;
+
 		const stream = anthropic.messages.stream({
 			model: model ?? DEFAULT_AI_MODEL,
 			max_tokens: 8192,
-			system: buildSystemPrompt(),
-			tools,
+			system: cachedSystem,
+			tools: cachedTools,
 			messages
 		});
 
