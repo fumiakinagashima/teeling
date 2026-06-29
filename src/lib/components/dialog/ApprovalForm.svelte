@@ -471,13 +471,6 @@
 									<option value={acc.id}>{acc.name}{acc.role ? `（${acc.role}）` : ''}</option>
 								{/each}
 							</select>
-							{#if entry.accountId}
-								<div class="account-preview">
-									<span class="acc-name">{entry.approver}</span>
-									{#if entry.role}<span class="acc-meta">{entry.role}</span>{/if}
-									{#if entry.email}<span class="acc-meta">{entry.email}</span>{/if}
-								</div>
-							{/if}
 						</div>
 						{#if routeEntries.length > 1}
 							<button type="button" class="btn-remove" onclick={() => removeStep(i)}>✕</button>
