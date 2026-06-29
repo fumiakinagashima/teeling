@@ -75,15 +75,23 @@
 		const t = templates.find(tmpl => tmpl.id === id);
 		if (!t) return;
 		if (!content) content = t.bodyFormat;
-		if (routeEntries.every(r => !r.approver.trim())) {
-			routeEntries = t.defaultRoute.map((r, i) => ({
-				step: r.step ?? i + 1,
-				accountId: '',
-				approver: r.approver,
-				email: r.email ?? '',
-				role: r.role ?? ''
-			}));
-			if (routeEntries.length === 0) routeEntries = [{ step: 1, accountId: '', approver: '', email: '', role: '' }];
+		if (routeEntries.every(r => !r.accountId)) {
+			const mapped = t.defaultRoute
+				.filter(r => (r as { accountId?: string }).accountId)
+				.map((r, i) => {
+					const rid = (r as { accountId?: string }).accountId ?? '';
+					const acc = accountOptions.find(a => a.id === rid);
+					return {
+						step: r.step ?? i + 1,
+						accountId: rid,
+						approver: acc?.name ?? r.approver,
+						email: acc?.email ?? r.email ?? '',
+						role: acc?.role ?? r.role ?? ''
+					};
+				});
+			routeEntries = mapped.length > 0
+				? mapped
+				: [{ step: 1, accountId: '', approver: '', email: '', role: '' }];
 		}
 		customFieldValues = {};
 	}
