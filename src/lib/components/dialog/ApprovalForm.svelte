@@ -113,7 +113,7 @@
 				body: JSON.stringify({
 					title: title.trim(),
 					content: content.trim(),
-					route: routeEntries.filter(r => r.approver.trim()).map(r => ({ step: r.step, approver: r.approver.trim(), role: r.role.trim() || undefined }))
+					route: routeEntries.filter(r => r.accountId).map(r => ({ step: r.step, approver: r.approver.trim(), role: r.role.trim() || undefined }))
 				})
 			});
 			const result = await res.json() as ApprovalDraftReviewResult & { error?: string };
@@ -181,7 +181,7 @@
 
 	function buildRoute() {
 		return routeEntries
-			.filter(r => r.approver.trim())
+			.filter(r => r.accountId)
 			.map(r => ({
 				step: r.step,
 				accountId: r.accountId || undefined,
@@ -249,8 +249,8 @@
 
 	async function submit() {
 		if (!title.trim()) { error = 'タイトルは必須です。'; return; }
-		if (!routeEntries.some(r => r.approver.trim())) { error = '承認者を1名以上設定してください。'; return; }
-		if (routeEntries.some(r => !r.approver.trim())) { error = '承認者名をすべて入力してください。'; return; }
+		if (!routeEntries.some(r => r.accountId)) { error = '承認者を1名以上選択してください。'; return; }
+		if (routeEntries.some(r => !r.accountId)) { error = '承認者をすべて選択してください。'; return; }
 		if (!confirm('申請すると内容の修正ができなくなります。\nよろしいですか？')) return;
 
 		saving = true;
@@ -453,21 +453,17 @@
 						</div>
 						<div class="sub-field sub-field-wide">
 							<label>承認者 <span class="req">*</span></label>
-							{#if accountOptions.length > 0}
-								<select
-									class="account-select"
-									value={entry.accountId}
-									onchange={(e) => selectAccount(entry, (e.target as HTMLSelectElement).value)}
-								>
-									<option value="">— 手動入力 —</option>
-									{#each accountOptions as acc}
-										<option value={acc.id}>{acc.name}{acc.role ? `（${acc.role}）` : ''}</option>
-									{/each}
-								</select>
-							{/if}
-							{#if !entry.accountId}
-								<input type="text" bind:value={entry.approver} placeholder="承認者名を入力" class="manual-input" />
-							{:else}
+							<select
+								class="account-select"
+								value={entry.accountId}
+								onchange={(e) => selectAccount(entry, (e.target as HTMLSelectElement).value)}
+							>
+								<option value="">— 承認者を選択 —</option>
+								{#each accountOptions as acc}
+									<option value={acc.id}>{acc.name}{acc.role ? `（${acc.role}）` : ''}</option>
+								{/each}
+							</select>
+							{#if entry.accountId}
 								<div class="account-preview">
 									<span class="acc-name">{entry.approver}</span>
 									{#if entry.role}<span class="acc-meta">{entry.role}</span>{/if}

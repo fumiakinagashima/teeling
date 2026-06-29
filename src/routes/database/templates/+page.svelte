@@ -19,7 +19,9 @@
 	let editDescription = $state('');
 	let editBodyFormat = $state('');
 	let editCustomFields = $state<CustomFieldDef[]>([]);
-	let editDefaultRoute = $state<{ step: number; approver: string; role: string; email: string }[]>([]);
+	let accounts = $state<{ id: string; name: string; role: string | null }[]>([]);
+	$effect(() => { fetch('/api/accounts').then(r => r.json()).then((d: unknown) => { accounts = (d as { rows?: { id: string; name: string; role: string | null }[] }).rows ?? []; }); });
+	let editDefaultRoute = $state<{ step: number; accountId: string; approver: string; role: string; email: string }[]>([]);
 
 	function openNew() {
 		isNew = true;
@@ -44,6 +46,7 @@
 		editCustomFields = t.customFields.map(f => ({ ...f }));
 		editDefaultRoute = t.defaultRoute.map(r => ({
 			step: r.step,
+			accountId: (r as {accountId?: string}).accountId ?? '',
 			approver: r.approver,
 			role: r.role ?? '',
 			email: r.email ?? ''
@@ -69,7 +72,7 @@
 
 	function addRouteStep() {
 		const maxStep = editDefaultRoute.length > 0 ? Math.max(...editDefaultRoute.map(r => r.step)) : 0;
-		editDefaultRoute = [...editDefaultRoute, { step: maxStep + 1, approver: '', role: '', email: '' }];
+		editDefaultRoute = [...editDefaultRoute, { step: maxStep + 1, accountId: '', approver: '', role: '', email: '' }];
 	}
 
 	function removeRouteStep(i: number) {
@@ -89,8 +92,8 @@
 				bodyFormat: editBodyFormat,
 				customFields: editCustomFields.filter(f => f.label.trim()),
 				defaultRoute: editDefaultRoute
-					.filter(r => r.approver.trim())
-					.map(r => ({ step: r.step, approver: r.approver.trim(), role: r.role.trim() || undefined, email: r.email.trim() || undefined }))
+					.filter(r => r.accountId)
+					.map(r => ({ step: r.step, accountId: r.accountId, approver: r.approver, role: r.role.trim() || undefined, email: r.email.trim() || undefined }))
 			};
 			if (isNew) {
 				const res = await fetch('/api/templates', {
@@ -256,9 +259,19 @@
 							{#each editDefaultRoute as entry, i}
 								<div class="route-row">
 									<span class="step-badge">Step {entry.step}</span>
-									<input type="text" bind:value={entry.approver} placeholder="承認者名 *" class="route-input" />
-									<input type="text" bind:value={entry.role} placeholder="役職（任意）" class="route-input route-input-sm" />
-									<input type="email" bind:value={entry.email} placeholder="メール（任意）" class="route-input route-input-sm" />
+									<select class="route-input" value={entry.accountId} onchange={(e) => {
+										const id = (e.target as HTMLSelectElement).value;
+										entry.accountId = id;
+										const acc = accounts.find(a => a.id === id);
+										entry.approver = acc?.name ?? '';
+										entry.role = acc?.role ?? '';
+										editDefaultRoute = [...editDefaultRoute];
+									}}>
+										<option value="">— 承認者を選択 —</option>
+										{#each accounts as acc}
+											<option value={acc.id}>{acc.name}{acc.role ? `（${acc.role}）` : ''}</option>
+										{/each}
+									</select>
 									<button type="button" class="btn-remove" onclick={() => removeRouteStep(i)}>✕</button>
 								</div>
 							{/each}
