@@ -50,7 +50,12 @@ export const PATCH: RequestHandler = async ({ params, request, platform, locals 
 			}
 			row = await cancelApproval(db, params.id);
 		} else if (body.action === 'return') {
-			if (account.permission !== 'admin') return json({ error: '権限がありません' }, { status: 403 });
+			const existingForReturn = await getApproval(db, params.id);
+			if (!existingForReturn) return json({ error: '申請が見つかりません' }, { status: 404 });
+			const isDesignatedApprover = existingForReturn.route.some(
+				(s) => s.status === 'pending' && s.accountId === account.id
+			);
+			if (!isDesignatedApprover) return json({ error: '権限がありません' }, { status: 403 });
 			row = await returnApproval(db, params.id, body.comment);
 		} else if (body.action === 'save_draft') {
 			const existing = await getApproval(db, params.id);
