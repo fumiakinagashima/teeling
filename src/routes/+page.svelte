@@ -26,20 +26,17 @@
 
 	let filter = $state<'draft' | 'pending' | 'all'>('pending');
 
-	// 「自分が担当」の切り替えはlocalStorageに記憶し、リロード・画面遷移をまたいで維持する
-	const MY_ONLY_STORAGE_KEY = 'teeling_top_my_only';
+	// 「自分が担当」の切り替えはcookieに記憶する。+page.server.tsのloadでSSR時点から
+	// 読み取ることで、localStorage経由（hydration後にしか反映できない）で起きる
+	// チラつきを避けている
+	const MY_ONLY_COOKIE = 'teeling_top_my_only';
 
-	function loadMyOnly(): boolean {
-		if (typeof localStorage === 'undefined') return true;
-		const raw = localStorage.getItem(MY_ONLY_STORAGE_KEY);
-		return raw === null ? true : raw === 'true';
+	let myOnly = $state(data.myOnly);
+
+	function setMyOnly(value: boolean) {
+		myOnly = value;
+		document.cookie = `${MY_ONLY_COOKIE}=${value}; path=/; max-age=31536000; SameSite=Lax`;
 	}
-
-	let myOnly = $state(loadMyOnly());
-
-	$effect(() => {
-		if (typeof localStorage !== 'undefined') localStorage.setItem(MY_ONLY_STORAGE_KEY, String(myOnly));
-	});
 
 	const baseRows = $derived(
 		filter === 'all' ? data.rows : data.rows.filter((r) => r.status === filter)
@@ -147,7 +144,12 @@
 		<label class="toggle-label">
 			<span class="toggle-text">自分が担当</span>
 			<span class="toggle-switch" class:on={myOnly}>
-				<input type="checkbox" bind:checked={myOnly} class="toggle-input" />
+				<input
+					type="checkbox"
+					checked={myOnly}
+					onchange={(e) => setMyOnly((e.target as HTMLInputElement).checked)}
+					class="toggle-input"
+				/>
 				<span class="toggle-thumb"></span>
 			</span>
 		</label>
