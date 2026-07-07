@@ -25,7 +25,21 @@
 	}
 
 	let filter = $state<'draft' | 'pending' | 'all'>('pending');
-	let myOnly = $state(true);
+
+	// 「自分が担当」の切り替えはlocalStorageに記憶し、リロード・画面遷移をまたいで維持する
+	const MY_ONLY_STORAGE_KEY = 'teeling_top_my_only';
+
+	function loadMyOnly(): boolean {
+		if (typeof localStorage === 'undefined') return true;
+		const raw = localStorage.getItem(MY_ONLY_STORAGE_KEY);
+		return raw === null ? true : raw === 'true';
+	}
+
+	let myOnly = $state(loadMyOnly());
+
+	$effect(() => {
+		if (typeof localStorage !== 'undefined') localStorage.setItem(MY_ONLY_STORAGE_KEY, String(myOnly));
+	});
 
 	const baseRows = $derived(
 		filter === 'all' ? data.rows : data.rows.filter((r) => r.status === filter)
