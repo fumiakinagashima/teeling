@@ -129,7 +129,9 @@
 				body: JSON.stringify({
 					title: title.trim(),
 					content: content.trim(),
-					route: routeEntries.filter(r => r.accountId).map(r => ({ step: r.step, approver: r.approver.trim(), role: r.role.trim() || undefined }))
+					route: routeEntries.filter(r => r.accountId).map(r => ({ step: r.step, approver: r.approver.trim(), role: r.role.trim() || undefined })),
+					fieldDefs: currentTemplate?.customFields,
+					fields: customFieldValues
 				})
 			});
 			const result = await res.json() as ApprovalDraftReviewResult & { error?: string };

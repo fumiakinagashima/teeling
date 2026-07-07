@@ -225,8 +225,8 @@ export const APPROVAL_DRAFT_REVIEW_SYSTEM_PROMPT = `あなたはTeelingという
 - 必ず以下のJSON形式のみを出力する。説明文・マークダウン記法・コードブロックは一切付けない
 - summary: このまま提出して問題ないか、修正を検討した方がよいかを1〜2文で
 - issues（誤字脱字・表現）: タイトル・本文の誤字脱字、不自然な日本語、敬語の誤りなど。なければ空配列
-- missing（不足している情報）: 承認者が判断するために必要だが書かれていない情報（金額・期間・対象・理由・背景など）。なければ空配列
-- suggestions（改善提案）: より伝わりやすい書き方・構成にするための提案。なければ空配列
+- missing（不足している情報）: 承認者が判断するために必要だが書かれていない情報（金額・期間・対象・理由・背景など）。申請フィールドが未入力の場合もここに含める。なければ空配列
+- suggestions（改善提案）: より伝わりやすい書き方・構成にするための提案。申請内容とフィールドの数値に矛盾がある場合はここで指摘する。なければ空配列
 
 {
   "summary": "...",
@@ -239,10 +239,19 @@ export function buildApprovalDraftReviewPrompt(input: {
 	title: string;
 	content: string;
 	route: { step: number; approver: string; role?: string }[];
+	fieldDefs?: { key: string; label: string; type: string }[];
+	fields?: Record<string, unknown>;
 }): string {
 	const routeLines = input.route.length > 0
 		? input.route.map(s => `- Step${s.step}: ${s.approver}${s.role ? `（${s.role}）` : ''}`).join('\n')
 		: 'なし';
+
+	const fieldSection = (input.fieldDefs?.length ?? 0) > 0
+		? '\n\n## 申請フィールド（金額・日付など、テンプレートで構造化された値）\n' + input.fieldDefs!.map(def => {
+			const val = input.fields?.[def.key];
+			return `- ${def.label}: ${val !== undefined && val !== '' ? String(val) : '（未入力）'}`;
+		}).join('\n')
+		: '';
 
 	return `これから提出する社内承認申請の下書きをレビューしてください。誤字脱字・不足情報・改善点があれば指摘してください。
 
@@ -250,7 +259,7 @@ export function buildApprovalDraftReviewPrompt(input: {
 ${input.title || '（未入力）'}
 
 ## 申請内容
-${input.content || '（未入力）'}
+${input.content || '（未入力）'}${fieldSection}
 
 ## 承認ルート（参考: 誰が承認するか）
 ${routeLines}`;

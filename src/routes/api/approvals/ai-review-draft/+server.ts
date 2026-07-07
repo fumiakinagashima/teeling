@@ -19,6 +19,8 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 		title?: string;
 		content?: string;
 		route?: { step: number; approver: string; role?: string }[];
+		fieldDefs?: { key: string; label: string; type: string }[];
+		fields?: Record<string, unknown>;
 	};
 	if (!body.title?.trim() && !body.content?.trim()) {
 		return json({ error: 'タイトルまたは申請内容を入力してください。' }, { status: 400 });
@@ -36,7 +38,9 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 				content: buildApprovalDraftReviewPrompt({
 					title: body.title ?? '',
 					content: body.content ?? '',
-					route: body.route ?? []
+					route: body.route ?? [],
+					fieldDefs: body.fieldDefs,
+					fields: body.fields
 				})
 			}]
 		});
