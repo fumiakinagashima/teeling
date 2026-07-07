@@ -5,6 +5,14 @@
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	const chatContextFields = [
+		{ key: 'title', label: 'タイトル' },
+		{ key: 'content', label: '申請内容' }
+	];
+
+	let title = $state(data.row.title);
+	let content = $state(data.row.content);
 </script>
 
 <div class="page">
@@ -14,14 +22,22 @@
 			<ApprovalForm
 				accountOptions={data.accountOptions}
 				editRow={data.row}
+				bind:title
+				bind:content
 				onSaved={(id) => goto(`/approvals/${id}`)}
 				oncancel={() => goto(`/approvals/${data.row.id}`)}
 			/>
 		</div>
 	</div>
-	<div class="chat-side">
-		<DialogChatSide contextTitle={data.row.title} contextFields={[]} />
-	</div>
+	<DialogChatSide
+		dockSide="end"
+		contextTitle={data.row.title}
+		contextFields={chatContextFields}
+		onFormFill={(fields) => {
+			if (fields.title !== undefined) title = fields.title;
+			if (fields.content !== undefined) content = fields.content;
+		}}
+	/>
 </div>
 
 <style lang="scss">
@@ -29,13 +45,6 @@
 		display: flex;
 		flex: 1;
 		min-height: 0;
-		overflow: hidden;
-	}
-
-	.chat-side {
-		width: 320px;
-		flex-shrink: 0;
-		border-left: 1px solid var(--color-border);
 		overflow: hidden;
 	}
 

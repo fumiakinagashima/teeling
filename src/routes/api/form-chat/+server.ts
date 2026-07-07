@@ -36,7 +36,15 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 			label: string;
 			data?: Record<string, unknown>;
 		} | null;
+		// true の場合、AIが fill_form_fields ツールでフォームのフィールドに直接値を入力できるようにする
+		enableFormFill?: boolean;
 	};
+
+	// フォームに直接入力させてよいフィールドのみ許可する（承認ルート等の複雑な項目は対象外）
+	const FORM_FILLABLE_KEYS = new Set(['title', 'content']);
+	const fillableFields = body.enableFormFill
+		? body.formFields.filter((f) => FORM_FILLABLE_KEYS.has(f.key))
+		: [];
 
 	if (mockMode) {
 		const stream = new ReadableStream({
@@ -102,9 +110,16 @@ ${fieldList}`
 		);
 	}
 
+	if (fillableFields.length > 0) {
+		sections.push(
+			`ユーザーが下書きの作成・内容の変更を依頼した場合は、チャットで文面を書き出すだけで終わらせず、必ず fill_form_fields ツールを使って該当するフィールドにその内容を直接入力してください。
+入力後は「〇〇を入力しました」等、何を反映したか簡潔に伝えてください。`
+		);
+	}
+
 	sections.push(
 		`利用可能なツール: 顧客・案件・活動・担当者などの情報を検索・取得・集計できます。
-制約: データの登録・更新・削除・メール送信はできません。情報の取得のみ行えます。
+制約: データの登録・更新・削除・メール送信はできません（fill_form_fields によるフォーム入力を除く）。
 金額・日付・ステータスなどは日本語で分かりやすく示し、回答は簡潔にしてください。`
 	);
 
@@ -114,6 +129,24 @@ ${fieldList}`
 		...body.history.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.text })),
 		{ role: 'user', content: body.message }
 	];
+
+	const fillFormTool =
+		fillableFields.length > 0
+			? {
+					name: 'fill_form_fields',
+					description:
+						'開いているフォームのフィールドに値を直接入力する。ユーザーが依頼した下書き・内容をチャットで説明するのではなく、このツールでフォームへ反映すること。',
+					input_schema: {
+						type: 'object' as const,
+						properties: Object.fromEntries(
+							fillableFields.map((f) => [f.key, { type: 'string', description: f.label }])
+						),
+						additionalProperties: false
+					}
+				}
+			: null;
+
+	const formChatTools = fillFormTool ? [...readonlyTools, fillFormTool] : readonlyTools;
 
 	const anthropic = new Anthropic({ apiKey });
 
@@ -132,7 +165,7 @@ ${fieldList}`
 						model: 'claude-haiku-4-5-20251001',
 						max_tokens: 1024,
 						system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
-						tools: readonlyTools,
+						tools: formChatTools,
 						messages: currentMessages
 					});
 
@@ -162,6 +195,20 @@ ${fieldList}`
 						toolBlocks.map(async (b) => {
 							try {
 								const input = JSON.parse(b.inputJson || '{}');
+								if (b.name === 'fill_form_fields') {
+									const fields = Object.fromEntries(
+										Object.entries(input as Record<string, unknown>).filter(
+											(entry): entry is [string, string] =>
+												FORM_FILLABLE_KEYS.has(entry[0]) && typeof entry[1] === 'string'
+										)
+									);
+									enqueue({ type: 'form_fields', fields });
+									return {
+										type: 'tool_result' as const,
+										tool_use_id: b.id,
+										content: 'フォームに反映しました。'
+									};
+								}
 								const result = await dispatchTool(db, b.name as never, input, toolEnv);
 								return {
 									type: 'tool_result' as const,

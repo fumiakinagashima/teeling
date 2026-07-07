@@ -124,7 +124,6 @@
 		min-width: 0;
 		overflow-y: auto;
 		padding: 24px;
-		border-left: 1px solid var(--color-border);
 	}
 
 	.dialog-footer {

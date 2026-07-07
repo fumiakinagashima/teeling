@@ -19,14 +19,79 @@
 		contextFields: { key: string; label: string }[];
 		// 詳細表示中のレコード。指示語「この顧客」等を解決できるようにする
 		recordContext?: RecordContext | null;
+		// 指定すると、AIが対応するフィールド（title/content）をフォームに直接入力できるようになる
+		onFormFill?: (fields: Record<string, string>) => void;
+		// このパネルがコンテンツ側の左（start）・右（end）どちらに置かれるか。
+		// リサイズハンドルの表示位置とドラッグ方向の符号を決める
+		dockSide?: 'start' | 'end';
 	};
 
-	let { contextTitle, contextFields, recordContext = null }: Props = $props();
+	let {
+		contextTitle,
+		contextFields,
+		recordContext = null,
+		onFormFill,
+		dockSide = 'start'
+	}: Props = $props();
 
 	let chatMessages = $state<DialogMessage[]>([]);
 	let chatInput = $state('');
 	let chatLoading = $state(false);
 	let chatListEl = $state<HTMLElement | null>(null);
+
+	// AIアシスタント欄の幅（ドラッグでリサイズ可能。localStorageに記憶する）
+	const CHAT_WIDTH_STORAGE_KEY = 'teeling_dialog_chat_width';
+	const CHAT_WIDTH_MIN = 260;
+	const CHAT_WIDTH_MAX = 560;
+	const CHAT_WIDTH_DEFAULT = 300;
+	const CHAT_WIDTH_KEY_STEP = 20;
+
+	function clampChatWidth(w: number): number {
+		return Math.min(CHAT_WIDTH_MAX, Math.max(CHAT_WIDTH_MIN, w));
+	}
+
+	function loadChatWidth(): number {
+		if (typeof localStorage === 'undefined') return CHAT_WIDTH_DEFAULT;
+		const raw = Number(localStorage.getItem(CHAT_WIDTH_STORAGE_KEY));
+		return Number.isFinite(raw) && raw > 0 ? clampChatWidth(raw) : CHAT_WIDTH_DEFAULT;
+	}
+
+	let chatWidth = $state(loadChatWidth());
+	let resizing = $state(false);
+
+	// 親のコンテンツ側（order未指定 = 0）を挟んで chat-side とハンドルを正しい順序に並べる
+	const chatOrder = $derived(dockSide === 'end' ? 2 : -1);
+	const handleOrder = $derived(dockSide === 'end' ? 1 : 0);
+
+	function startResize(e: PointerEvent) {
+		e.preventDefault();
+		resizing = true;
+		const startX = e.clientX;
+		const startWidth = chatWidth;
+		// 左側に置かれている場合は右にドラッグするほど、右側の場合は左にドラッグするほど幅が広がる
+		const sign = dockSide === 'end' ? -1 : 1;
+
+		function onMove(ev: PointerEvent) {
+			chatWidth = clampChatWidth(startWidth + sign * (ev.clientX - startX));
+		}
+		function onUp() {
+			resizing = false;
+			window.removeEventListener('pointermove', onMove);
+			window.removeEventListener('pointerup', onUp);
+			localStorage.setItem(CHAT_WIDTH_STORAGE_KEY, String(chatWidth));
+		}
+		window.addEventListener('pointermove', onMove);
+		window.addEventListener('pointerup', onUp);
+	}
+
+	function handleResizeKey(e: KeyboardEvent) {
+		if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+		e.preventDefault();
+		const widenKey = dockSide === 'end' ? 'ArrowLeft' : 'ArrowRight';
+		const delta = e.key === widenKey ? CHAT_WIDTH_KEY_STEP : -CHAT_WIDTH_KEY_STEP;
+		chatWidth = clampChatWidth(chatWidth + delta);
+		localStorage.setItem(CHAT_WIDTH_STORAGE_KEY, String(chatWidth));
+	}
 
 	$effect(() => {
 		void chatMessages.length;
@@ -58,6 +123,7 @@
 					formTitle: contextTitle,
 					formFields: contextFields,
 					recordContext,
+					enableFormFill: !!onFormFill,
 					history: chatMessages.slice(0, -2)
 				})
 			});
@@ -83,13 +149,19 @@
 				for (const part of parts) {
 					if (!part.startsWith('data: ')) continue;
 					try {
-						const event = JSON.parse(part.slice(6)) as { type: string; text?: string };
+						const event = JSON.parse(part.slice(6)) as {
+							type: string;
+							text?: string;
+							fields?: Record<string, string>;
+						};
 						if (event.type === 'delta' && event.text) {
 							assistantText += event.text;
 							chatMessages = [
 								...chatMessages.slice(0, -1),
 								{ role: 'assistant', text: assistantText }
 							];
+						} else if (event.type === 'form_fields' && event.fields) {
+							onFormFill?.(event.fields);
 						}
 					} catch {
 						// ignore parse error
@@ -109,7 +181,7 @@
 	}
 </script>
 
-<div class="chat-side">
+<div class="chat-side" style:width="{chatWidth}px" style:order={chatOrder}>
 	<div class="chat-header">AI アシスタント</div>
 	<div class="chat-messages" bind:this={chatListEl}>
 		{#if chatMessages.length === 0}
@@ -153,15 +225,65 @@
 		</button>
 	</div>
 </div>
+<!-- ARIA Window Splitter パターン（https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter/）:
+     role="separator" + tabindex + キー操作は非対話要素向けのa11y-lintでは検出できない正しい組み合わせ -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<div
+	class="chat-resize-handle"
+	class:active={resizing}
+	style:order={handleOrder}
+	role="separator"
+	aria-orientation="vertical"
+	aria-label="AIアシスタントの幅を調整"
+	aria-valuenow={chatWidth}
+	aria-valuemin={CHAT_WIDTH_MIN}
+	aria-valuemax={CHAT_WIDTH_MAX}
+	tabindex="0"
+	onpointerdown={startResize}
+	onkeydown={handleResizeKey}
+></div>
 
 <style lang="scss">
 	.chat-side {
-		width: 300px;
 		flex-shrink: 0;
 		height: 100%;
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
+
+		@media (max-width: 640px) {
+			display: none;
+		}
+	}
+
+	.chat-resize-handle {
+		flex-shrink: 0;
+		width: 5px;
+		cursor: col-resize;
+		position: relative;
+		background: transparent;
+
+		&::after {
+			content: '';
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			left: 2px;
+			width: 2px;
+			background: var(--color-border);
+		}
+
+		&:hover::after, &.active::after {
+			left: 1px;
+			width: 3px;
+			background: var(--color-primary);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--color-primary);
+			outline-offset: -2px;
+		}
 
 		@media (max-width: 640px) {
 			display: none;

@@ -38,13 +38,12 @@
 			/>
 		</div>
 	</div>
-	<div class="chat-side">
-		<DialogChatSide
-			contextTitle={row.title}
-			contextFields={[]}
-			recordContext={chatRecordContext}
-		/>
-	</div>
+	<DialogChatSide
+		dockSide="end"
+		contextTitle={row.title}
+		contextFields={[]}
+		recordContext={chatRecordContext}
+	/>
 </div>
 
 <style lang="scss">
@@ -52,13 +51,6 @@
 		display: flex;
 		flex: 1;
 		min-height: 0;
-		overflow: hidden;
-	}
-
-	.chat-side {
-		width: 320px;
-		flex-shrink: 0;
-		border-left: 1px solid var(--color-border);
 		overflow: hidden;
 	}
 

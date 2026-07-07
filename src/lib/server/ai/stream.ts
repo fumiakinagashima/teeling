@@ -16,6 +16,7 @@ import type { ToolEnv } from '$lib/server/mcp';
 export type StreamEvent =
 	| { type: 'delta'; text: string }
 	| { type: 'ui'; content: MessageContent }
+	| { type: 'form_fields'; fields: Record<string, string> }
 	| { type: 'done' }
 	| { type: 'error'; message: string };
 

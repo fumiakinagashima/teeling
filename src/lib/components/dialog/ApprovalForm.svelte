@@ -8,12 +8,22 @@
 	type Props = {
 		accountOptions: AccountRow[];
 		editRow?: ApprovalRow;
+		title?: string;
+		content?: string;
 		onCreated?: (id: string) => void;
 		onSaved?: (id: string) => void;
 		oncancel?: () => void;
 	};
 
-	let { accountOptions, editRow, onCreated, onSaved, oncancel }: Props = $props();
+	let {
+		accountOptions,
+		editRow,
+		title = $bindable(editRow?.title ?? ''),
+		content = $bindable(editRow?.content ?? ''),
+		onCreated,
+		onSaved,
+		oncancel
+	}: Props = $props();
 
 	const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10MB
 
@@ -25,8 +35,6 @@
 		role: string;
 	};
 
-	let title = $state(editRow?.title ?? '');
-	let content = $state(editRow?.content ?? '');
 	let routeEntries = $state<RouteEntry[]>(
 		editRow && editRow.route.length > 0
 			? editRow.route.map(s => ({
@@ -334,7 +342,7 @@
 		<!-- Content -->
 		<div class="field">
 			<label>申請内容</label>
-			<textarea class="content-input" bind:value={content} rows="5" placeholder="申請の背景・理由・詳細を記入してください。"></textarea>
+			<textarea class="content-input" bind:value={content} rows="12" placeholder="申請の背景・理由・詳細を記入してください。"></textarea>
 		</div>
 
 		<!-- Custom Fields -->

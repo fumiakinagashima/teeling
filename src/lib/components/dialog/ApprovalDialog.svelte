@@ -171,7 +171,6 @@
 		min-width: 0;
 		overflow-y: auto;
 		padding: 24px 28px;
-		border-left: 1px solid var(--color-border);
 	}
 
 	.loading-wrap {

@@ -11,6 +11,9 @@
 		{ key: 'content', label: '申請内容' },
 		{ key: 'route', label: '承認ルート' }
 	];
+
+	let title = $state('');
+	let content = $state('');
 </script>
 
 <div class="page">
@@ -19,14 +22,22 @@
 			<h2 class="page-title">新規申請</h2>
 			<ApprovalForm
 				accountOptions={data.accountOptions}
+				bind:title
+				bind:content
 				onCreated={(id) => goto(`/approvals/${id}`)}
 				oncancel={() => goto('/')}
 			/>
 		</div>
 	</div>
-	<div class="chat-side">
-		<DialogChatSide contextTitle="新規申請" contextFields={chatContextFields} />
-	</div>
+	<DialogChatSide
+		dockSide="end"
+		contextTitle="新規申請"
+		contextFields={chatContextFields}
+		onFormFill={(fields) => {
+			if (fields.title !== undefined) title = fields.title;
+			if (fields.content !== undefined) content = fields.content;
+		}}
+	/>
 </div>
 
 <style lang="scss">
@@ -34,13 +45,6 @@
 		display: flex;
 		flex: 1;
 		min-height: 0;
-		overflow: hidden;
-	}
-
-	.chat-side {
-		width: 320px;
-		flex-shrink: 0;
-		border-left: 1px solid var(--color-border);
 		overflow: hidden;
 	}
 
