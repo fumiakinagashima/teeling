@@ -28,3 +28,23 @@ bucket_name = "teeling"
 # ANTHROPIC_API_KEY は `wrangler secret put ANTHROPIC_API_KEY` で管理する（[vars] に書くと deploy 時にシークレットを空文字で上書きしてしまうため定義しない）
 # ローカル開発時のモックモード（.dev.vars で上書き可能）
 MOCK_AI = "false"
+
+# ローカル開発 (`bun dev` = vite dev の platformProxy、svelte.config.js で environment = "local" を指定) 用。
+# 名前付き environment の d1_databases/kv_namespaces/r2_buckets は上位の設定を継承しないため全項目を再定義している。
+# database_id/id はダミー値でよく、.wrangler/state にローカル用のD1/KVが作成される（本番の実IDとは分離される）。
+[[env.local.d1_databases]]
+binding = "DB"
+database_name = "teeling"
+database_id = ""
+migrations_dir = "drizzle"
+
+[[env.local.kv_namespaces]]
+binding = "KV"
+id = "dummy"
+
+[[env.local.r2_buckets]]
+binding = "R2"
+bucket_name = "teeling"
+
+[env.local.vars]
+MOCK_AI = "false"
