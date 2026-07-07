@@ -5,12 +5,24 @@
 	type Props = {
 		editRow?: TemplateRow;
 		accountOptions: AccountRow[];
+		name?: string;
+		description?: string;
+		bodyFormat?: string;
 		onSaved?: (row: TemplateRow) => void;
 		onDeleted?: () => void;
 		oncancel?: () => void;
 	};
 
-	let { editRow, accountOptions, onSaved, onDeleted, oncancel }: Props = $props();
+	let {
+		editRow,
+		accountOptions,
+		name = $bindable(editRow?.name ?? ''),
+		description = $bindable(editRow?.description ?? ''),
+		bodyFormat = $bindable(editRow?.bodyFormat ?? ''),
+		onSaved,
+		onDeleted,
+		oncancel
+	}: Props = $props();
 
 	type RouteEntry = {
 		step: number;
@@ -20,9 +32,6 @@
 		email: string;
 	};
 
-	let name = $state(editRow?.name ?? '');
-	let description = $state(editRow?.description ?? '');
-	let bodyFormat = $state(editRow?.bodyFormat ?? '');
 	let customFields = $state<CustomFieldDef[]>(editRow?.customFields.map(f => ({ ...f })) ?? []);
 	let routeEntries = $state<RouteEntry[]>(
 		editRow && editRow.defaultRoute.length > 0

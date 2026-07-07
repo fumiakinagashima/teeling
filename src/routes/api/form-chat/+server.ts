@@ -41,7 +41,7 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 	};
 
 	// フォームに直接入力させてよいフィールドのみ許可する（承認ルート等の複雑な項目は対象外）
-	const FORM_FILLABLE_KEYS = new Set(['title', 'content']);
+	const FORM_FILLABLE_KEYS = new Set(['title', 'content', 'name', 'description', 'bodyFormat']);
 	const fillableFields = body.enableFormFill
 		? body.formFields.filter((f) => FORM_FILLABLE_KEYS.has(f.key))
 		: [];
