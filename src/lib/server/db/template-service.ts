@@ -7,7 +7,6 @@ function toRow(r: typeof approvalTemplates.$inferSelect): TemplateRow {
 	return {
 		id: r.id,
 		name: r.name,
-		type: r.type,
 		description: r.description,
 		bodyFormat: r.bodyFormat,
 		customFields: JSON.parse(r.customFields) as CustomFieldDef[],
@@ -35,7 +34,6 @@ export async function createTemplate(
 	await db.insert(approvalTemplates).values({
 		id,
 		name: input.name,
-		type: input.type,
 		description: input.description ?? null,
 		bodyFormat: input.bodyFormat,
 		customFields: JSON.stringify(input.customFields),
@@ -51,7 +49,6 @@ export async function updateTemplate(
 ): Promise<TemplateRow> {
 	await db.update(approvalTemplates).set({
 		...(input.name !== undefined && { name: input.name }),
-		...(input.type !== undefined && { type: input.type }),
 		...(input.description !== undefined && { description: input.description }),
 		...(input.bodyFormat !== undefined && { bodyFormat: input.bodyFormat }),
 		...(input.customFields !== undefined && { customFields: JSON.stringify(input.customFields) }),

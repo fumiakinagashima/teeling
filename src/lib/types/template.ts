@@ -10,7 +10,6 @@ export type CustomFieldDef = {
 export type TemplateRow = {
 	id: string;
 	name: string;
-	type: string;
 	description: string | null;
 	bodyFormat: string;
 	customFields: CustomFieldDef[];

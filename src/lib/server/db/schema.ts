@@ -108,7 +108,6 @@ export const reminders = sqliteTable('reminders', {
 export const approvalTemplates = sqliteTable('approval_templates', {
 	id: text('id').primaryKey(),
 	name: text('name').notNull(),
-	type: text('type').notNull(),
 	description: text('description'),
 	bodyFormat: text('body_format').notNull().default(''),
 	customFields: text('custom_fields').notNull().default('[]'),

@@ -329,7 +329,7 @@
 				>
 					<option value="">— 使用しない —</option>
 					{#each templates as t}
-						<option value={t.id}>{t.name}（{t.type}）</option>
+						<option value={t.id}>{t.name}</option>
 					{/each}
 				</select>
 			</div>
