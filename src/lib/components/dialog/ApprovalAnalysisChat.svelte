@@ -88,7 +88,7 @@
 
 <div class="sim-chat">
 	<p class="sim-hint">
-		パラメータを変えてシミュレーションできます（例:「売上増加率を25%で計算すると？」）
+		You can run simulations by changing parameters (e.g. "What if the revenue growth rate is 25%?")
 	</p>
 
 	{#if messages.length > 0}
@@ -100,7 +100,7 @@
 							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 							{@html renderMd(msg.text)}
 						{:else}
-							<span class="thinking">計算中...</span>
+							<span class="thinking">Calculating...</span>
 						{/if}
 					{:else}
 						{msg.text}
@@ -113,13 +113,13 @@
 	<div class="input-row">
 		<textarea
 			class="sim-input"
-			placeholder="数値を変えて試算（Enterで送信）"
+			placeholder="Try different numbers (press Enter to send)"
 			rows="5"
 			bind:value={input}
 			onkeydown={onKeydown}
 			disabled={loading}
 		></textarea>
-		<button class="send-btn" onclick={send} disabled={loading || !input.trim()} aria-label="送信">
+		<button class="send-btn" onclick={send} disabled={loading || !input.trim()} aria-label="Send">
 			<ArrowUp size={16} />
 		</button>
 	</div>

@@ -21,11 +21,11 @@ export type ApprovalMetricsResult = {
 export const POST: RequestHandler = async ({ params, platform }) => {
 	if (!platform?.env?.DB) return json({ error: 'DB not available' }, { status: 500 });
 	const apiKey = platform?.env?.ANTHROPIC_API_KEY ?? env.ANTHROPIC_API_KEY ?? '';
-	if (!apiKey) return json({ error: 'ANTHROPIC_API_KEY が設定されていません。' }, { status: 500 });
+	if (!apiKey) return json({ error: 'ANTHROPIC_API_KEY is not configured.' }, { status: 500 });
 
 	const db = createDb(platform.env.DB);
 	const row = await getApproval(db, params.id);
-	if (!row) return json({ error: '申請が見つかりません' }, { status: 404 });
+	if (!row) return json({ error: 'Request not found' }, { status: 404 });
 
 	const anthropic = new Anthropic({ apiKey, timeout: 30000 });
 	let text = '';
@@ -39,18 +39,18 @@ export const POST: RequestHandler = async ({ params, platform }) => {
 		text = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '';
 	} catch (e) {
 		const msg = e instanceof Error ? e.message : String(e);
-		return json({ error: `AIエラー: ${msg}` }, { status: 500 });
+		return json({ error: `AI error: ${msg}` }, { status: 500 });
 	}
 
 	const jsonMatch = text.match(/\{[\s\S]*\}/);
 	if (!jsonMatch) {
-		return json({ error: `解析に失敗しました。(response: ${text.slice(0, 100)})` }, { status: 500 });
+		return json({ error: `Analysis failed. (response: ${text.slice(0, 100)})` }, { status: 500 });
 	}
 
 	try {
 		const result = JSON.parse(jsonMatch[0]) as ApprovalMetricsResult;
 		return json(result);
 	} catch {
-		return json({ error: '解析に失敗しました。' }, { status: 500 });
+		return json({ error: 'Analysis failed.' }, { status: 500 });
 	}
 };

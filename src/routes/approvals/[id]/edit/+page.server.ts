@@ -10,7 +10,7 @@ export const load: PageServerLoad = async ({ platform, params }) => {
 		getApproval(db, params.id),
 		listAccounts(db)
 	]);
-	if (!row) throw error(404, '申請が見つかりません');
+	if (!row) throw error(404, 'Request not found');
 	if (row.status !== 'draft') throw redirect(302, `/approvals/${params.id}`);
 	return { row, accountOptions };
 };

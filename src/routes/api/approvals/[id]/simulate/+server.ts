@@ -13,7 +13,7 @@ function sse(data: unknown): string {
 export const POST: RequestHandler = async ({ params, request, platform }) => {
 	if (!platform?.env?.DB) return json({ error: 'DB not available' }, { status: 500 });
 	const apiKey = platform?.env?.ANTHROPIC_API_KEY ?? env.ANTHROPIC_API_KEY ?? '';
-	if (!apiKey) return json({ error: 'ANTHROPIC_API_KEY が設定されていません。' }, { status: 500 });
+	if (!apiKey) return json({ error: 'ANTHROPIC_API_KEY is not configured.' }, { status: 500 });
 
 	const body = await request.json() as {
 		message: string;
@@ -23,24 +23,24 @@ export const POST: RequestHandler = async ({ params, request, platform }) => {
 
 	const db = createDb(platform.env.DB);
 	const row = await getApproval(db, params.id);
-	if (!row) return json({ error: '申請が見つかりません' }, { status: 404 });
+	if (!row) return json({ error: 'Request not found' }, { status: 404 });
 
 	const systemContext = `${SIMULATE_SYSTEM_PROMPT}
 
-## 対象申請
-タイトル: ${row.title}
-申請者: ${row.submittedBy}
-申請内容:
-${row.content || '（記載なし）'}
+## Target Request
+Title: ${row.title}
+Submitted by: ${row.submittedBy}
+Request content:
+${row.content || '(Not specified)'}
 
-## 初期分析結果
-リスク: ${body.analysis.riskLevel}
-総評: ${body.analysis.reviewSummary}
-${(body.analysis.keyFigures ?? []).length > 0 ? `\n主要数値:\n${(body.analysis.keyFigures ?? []).map((f) => `- ${f.label}: ${f.value}（「${f.quote}」）`).join('\n')}` : ''}
-${body.analysis.roi ? `ROI: ${body.analysis.roi}（${body.analysis.roiFormula}）` : ''}
-${body.analysis.paybackPeriod ? `回収期間: ${body.analysis.paybackPeriod}（${body.analysis.paybackFormula}）` : ''}`;
+## Initial Analysis Result
+Risk: ${body.analysis.riskLevel}
+Summary: ${body.analysis.reviewSummary}
+${(body.analysis.keyFigures ?? []).length > 0 ? `\nKey figures:\n${(body.analysis.keyFigures ?? []).map((f) => `- ${f.label}: ${f.value} ("${f.quote}")`).join('\n')}` : ''}
+${body.analysis.roi ? `ROI: ${body.analysis.roi} (${body.analysis.roiFormula})` : ''}
+${body.analysis.paybackPeriod ? `Payback period: ${body.analysis.paybackPeriod} (${body.analysis.paybackFormula})` : ''}`;
 
-	// 会話履歴をキャッシュ: 最後の履歴メッセージに cache_control を付与
+	// Cache conversation history: attach cache_control to the last history message
 	const historyParams: Anthropic.MessageParam[] = body.history.map((msg) => ({
 		role: msg.role,
 		content: msg.text

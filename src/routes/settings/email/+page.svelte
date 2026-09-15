@@ -68,9 +68,9 @@
 </script>
 
 <div class="page">
-	<h1>設定</h1>
+	<h1>Settings</h1>
 	<nav class="subnav">
-		<a href="/settings">一般</a>
+		<a href="/settings">General</a>
 		{#if data.account.permission === 'admin'}
 			<a href="/settings/integrations">{m.integrations()}</a>
 		{/if}
@@ -78,8 +78,8 @@
 			<a href="/settings/email" class="active">{m.email_settings()}</a>
 			<a href="/settings/ai">{m.ai_settings()}</a>
 		{/if}
-		<a href="/settings/account">プロフィール</a>
-		<a href="/settings/account/password">パスワード変更</a>
+		<a href="/settings/account">Profile</a>
+		<a href="/settings/account/password">Change Password</a>
 	</nav>
 
 	<section>

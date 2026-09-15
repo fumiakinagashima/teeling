@@ -15,48 +15,48 @@ import { METRICS_SYSTEM_PROMPT, buildMetricsPrompt } from '../ai/approval-metric
 export const tools: Tool[] = [
 	{
 		name: 'list_approvals',
-		description: '申請一覧を取得する。ステータスや種別で絞り込み可能。',
+		description: 'Retrieves the list of requests. Can be filtered by status or type.',
 		input_schema: {
 			type: 'object',
 			properties: {
 				status: {
 					type: 'array',
 					items: { type: 'string', enum: ['pending', 'approved', 'rejected', 'cancelled'] },
-					description: 'ステータスで絞り込む（複数指定可）'
+					description: 'Filter by status (multiple values allowed)'
 				},
-				type: { type: 'string', description: '申請種別で絞り込む（例: 値引き申請）' }
+				type: { type: 'string', description: 'Filter by request type (e.g., "Discount Request")' }
 			},
 			required: []
 		}
 	},
 	{
 		name: 'get_approval',
-		description: '申請の詳細（承認ルート・各ステップの状況を含む）を取得する。',
+		description: 'Retrieves the details of a request (including the approval route and the status of each step).',
 		input_schema: {
 			type: 'object',
-			properties: { id: { type: 'string', description: '申請ID' } },
+			properties: { id: { type: 'string', description: 'Request ID' } },
 			required: ['id']
 		}
 	},
 	{
 		name: 'create_approval',
-		description: '新しい申請を作成する。承認ルートをステップの配列で指定する。',
+		description: 'Creates a new request. Specify the approval route as an array of steps.',
 		input_schema: {
 			type: 'object',
 			properties: {
-				title: { type: 'string', description: '申請タイトル' },
-				submitted_by: { type: 'string', description: '申請者名（任意）' },
-				content: { type: 'string', description: '申請内容（テキスト）' },
+				title: { type: 'string', description: 'Request title' },
+				submitted_by: { type: 'string', description: 'Requester name (optional)' },
+				content: { type: 'string', description: 'Request content (text)' },
 				route: {
 					type: 'array',
-					description: '承認ルート。step が同じ番号は並列承認',
+					description: 'Approval route. Steps with the same number are approved in parallel',
 					items: {
 						type: 'object',
 						properties: {
-							step: { type: 'number', description: 'ステップ番号（1始まり、同番号は並列）' },
-							approver: { type: 'string', description: '承認者名' },
-							email: { type: 'string', description: '承認者メール（任意）' },
-							role: { type: 'string', description: '役職（任意）' }
+							step: { type: 'number', description: 'Step number (starting from 1; the same number means parallel approval)' },
+							approver: { type: 'string', description: 'Approver name' },
+							email: { type: 'string', description: 'Approver email (optional)' },
+							role: { type: 'string', description: 'Role/title (optional)' }
 						},
 						required: ['step', 'approver']
 					}
@@ -68,34 +68,34 @@ export const tools: Tool[] = [
 	{
 		name: 'update_approval_step',
 		description:
-			'申請の特定ステップを承認または否決する。step は route 配列のインデックス（0始まり）。',
+			'Approves or rejects a specific step of the request. step is the index (starting from 0) into the route array.',
 		input_schema: {
 			type: 'object',
 			properties: {
-				id: { type: 'string', description: '申請ID' },
-				step: { type: 'number', description: 'routeのインデックス（0始まり）' },
-				action: { type: 'string', enum: ['approve', 'reject'], description: '操作' },
-				comment: { type: 'string', description: 'コメント（任意）' }
+				id: { type: 'string', description: 'Request ID' },
+				step: { type: 'number', description: 'Index into route (starting from 0)' },
+				action: { type: 'string', enum: ['approve', 'reject'], description: 'Action' },
+				comment: { type: 'string', description: 'Comment (optional)' }
 			},
 			required: ['id', 'step', 'action']
 		}
 	},
 	{
 		name: 'cancel_approval',
-		description: '申請を取り消す。',
+		description: 'Cancels a request.',
 		input_schema: {
 			type: 'object',
-			properties: { id: { type: 'string', description: '申請ID' } },
+			properties: { id: { type: 'string', description: 'Request ID' } },
 			required: ['id']
 		}
 	},
 	{
 		name: 'calculate_approval_metrics',
 		description:
-			'申請内容からROI・回収期間・費用対効果などの財務的な判断材料を計算・生成する。「ROIを計算して」「費用対効果を分析して」「判断材料を出して」などの依頼に使う。',
+			'Calculates and generates financial decision-making inputs such as ROI, payback period, and cost-effectiveness from the request content. Used for requests like "Calculate the ROI," "Analyze the cost-effectiveness," or "Give me decision-making inputs."',
 		input_schema: {
 			type: 'object',
-			properties: { id: { type: 'string', description: '申請ID' } },
+			properties: { id: { type: 'string', description: 'Request ID' } },
 			required: ['id']
 		}
 	}
@@ -139,7 +139,7 @@ export async function handleListApprovals(db: Db, input: unknown) {
 export async function handleGetApproval(db: Db, input: unknown) {
 	const { id } = getApprovalSchema.parse(input);
 	const row = await getApproval(db, id);
-	if (!row) throw new Error(`申請が見つかりません: ${id}`);
+	if (!row) throw new Error(`Request not found: ${id}`);
 	return row;
 }
 
@@ -166,10 +166,10 @@ export async function handleCancelApproval(db: Db, input: unknown) {
 export async function handleCalculateApprovalMetrics(db: Db, input: unknown, env?: ToolEnv) {
 	const { id } = z.object({ id: z.string() }).parse(input);
 	const row = await getApproval(db, id);
-	if (!row) throw new Error(`申請が見つかりません: ${id}`);
+	if (!row) throw new Error(`Request not found: ${id}`);
 
 	const apiKey = env?.ANTHROPIC_API_KEY;
-	if (!apiKey) throw new Error('ANTHROPIC_API_KEY が設定されていません');
+	if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set');
 
 	const anthropic = new Anthropic({ apiKey, timeout: 30000 });
 	const message = await anthropic.messages.create({
@@ -180,6 +180,6 @@ export async function handleCalculateApprovalMetrics(db: Db, input: unknown, env
 	});
 	const text = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '';
 	const jsonMatch = text.match(/\{[\s\S]*\}/);
-	if (!jsonMatch) throw new Error('判断材料の生成に失敗しました');
+	if (!jsonMatch) throw new Error('Failed to generate decision-making inputs');
 	return JSON.parse(jsonMatch[0]);
 }

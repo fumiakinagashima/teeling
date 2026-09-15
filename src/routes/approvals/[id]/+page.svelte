@@ -9,21 +9,21 @@
 	let row = $state<ApprovalRow>(data.row);
 
 	const APPROVAL_STATUS_LABELS: Record<string, string> = {
-		pending: '審査中',
-		approved: '承認',
-		rejected: '否決',
-		cancelled: '取り消し'
+		pending: 'Pending',
+		approved: 'Approved',
+		rejected: 'Rejected',
+		cancelled: 'Cancelled'
 	};
 
 	const chatRecordContext = $derived({
 		type: 'approvals',
-		typeLabel: '申請',
+		typeLabel: 'Request',
 		id: row.id,
 		label: row.title,
 		data: {
-			申請者: row.submittedBy,
-			ステータス: APPROVAL_STATUS_LABELS[row.status] ?? row.status,
-			内容: row.content
+			Requester: row.submittedBy,
+			Status: APPROVAL_STATUS_LABELS[row.status] ?? row.status,
+			Content: row.content
 		} as Record<string, unknown>
 	});
 </script>

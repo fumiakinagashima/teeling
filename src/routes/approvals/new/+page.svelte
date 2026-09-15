@@ -7,9 +7,9 @@
 	let { data }: { data: PageData } = $props();
 
 	const chatContextFields = [
-		{ key: 'title', label: 'タイトル' },
-		{ key: 'content', label: '申請内容' },
-		{ key: 'route', label: '承認ルート' }
+		{ key: 'title', label: 'Title' },
+		{ key: 'content', label: 'Request Content' },
+		{ key: 'route', label: 'Approval Route' }
 	];
 
 	let title = $state('');
@@ -19,7 +19,7 @@
 <div class="page">
 	<div class="content-side">
 		<div class="content-inner">
-			<h2 class="page-title">新規申請</h2>
+			<h2 class="page-title">New Request</h2>
 			<ApprovalForm
 				accountOptions={data.accountOptions}
 				bind:title
@@ -31,7 +31,7 @@
 	</div>
 	<DialogChatSide
 		dockSide="end"
-		contextTitle="新規申請"
+		contextTitle="New Request"
 		contextFields={chatContextFields}
 		onFormFill={(fields) => {
 			if (fields.title !== undefined) title = fields.title;

@@ -11,6 +11,6 @@ export const load: PageServerLoad = async ({ locals, platform, params }) => {
 		getTemplate(db, params.id),
 		listAccounts(db)
 	]);
-	if (!row) error(404, 'テンプレートが見つかりません');
+	if (!row) error(404, 'Template not found');
 	return { row, accountOptions };
 };

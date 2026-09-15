@@ -30,13 +30,13 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 export const POST: RequestHandler = async ({ params, platform }) => {
 	if (!platform?.env?.DB) return json({ error: 'DB not available' }, { status: 500 });
 	const apiKey = platform?.env?.ANTHROPIC_API_KEY ?? env.ANTHROPIC_API_KEY ?? '';
-	if (!apiKey) return json({ error: 'ANTHROPIC_API_KEY が設定されていません。' }, { status: 500 });
+	if (!apiKey) return json({ error: 'ANTHROPIC_API_KEY is not configured.' }, { status: 500 });
 
 	const db = createDb(platform.env.DB);
 	const row = await getApproval(db, params.id);
-	if (!row) return json({ error: '申請が見つかりません' }, { status: 404 });
+	if (!row) return json({ error: 'Request not found' }, { status: 404 });
 
-	// 画像添付があれば内容と一緒にAIへ渡す
+	// If there are image attachments, pass them to the AI along with the content
 	const content: Array<
 		| { type: 'text'; text: string }
 		| { type: 'image'; source: { type: 'base64'; media_type: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'; data: string } }
@@ -69,18 +69,18 @@ export const POST: RequestHandler = async ({ params, platform }) => {
 		text = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '';
 	} catch (e) {
 		const msg = e instanceof Error ? e.message : String(e);
-		return json({ error: `AIエラー: ${msg}` }, { status: 500 });
+		return json({ error: `AI error: ${msg}` }, { status: 500 });
 	}
 
 	const jsonMatch = text.match(/\{[\s\S]*\}/);
 	if (!jsonMatch) {
-		return json({ error: `レビュー結果の解析に失敗しました。(response: ${text.slice(0, 100)})` }, { status: 500 });
+		return json({ error: `Failed to parse the review result. (response: ${text.slice(0, 100)})` }, { status: 500 });
 	}
 
 	try {
 		const result = JSON.parse(jsonMatch[0]) as ApprovalReviewResult;
 		return json(result);
 	} catch {
-		return json({ error: 'レビュー結果の解析に失敗しました。' }, { status: 500 });
+		return json({ error: 'Failed to parse the review result.' }, { status: 500 });
 	}
 };

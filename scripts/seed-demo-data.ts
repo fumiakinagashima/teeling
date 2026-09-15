@@ -43,180 +43,180 @@ type ApprovalSeed = {
 const seeds: ApprovalSeed[] = [
 	// ─── HIGH data quality ────────────────────────────────────────────────────
 	{
-		title: 'Salesforce Sales Cloud 導入申請',
-		type: '情報システム申請',
+		title: 'Salesforce Sales Cloud Implementation Request',
+		type: 'IT Systems Request',
 		status: 'pending',
 		submittedBy: ADMIN_ID,
 		_expectedQuality: 'high',
-		content: `## 申請概要
-営業部門の案件管理・商談進捗をSalesforce Sales Cloudに統合し、属人化を排除するため導入を申請します。
+		content: `## Request Summary
+Requesting implementation of Salesforce Sales Cloud to consolidate deal management and sales progress tracking across the sales department, eliminating reliance on individual knowledge.
 
-## 費用
-- ライセンス費: 月額 ¥6,000/ユーザー × 20名 = ¥120,000/月（年間 ¥1,440,000）
-- 初期導入・設定費（外部ベンダー）: ¥800,000（一括）
-- 初年度合計: ¥2,240,000
+## Cost
+- License fee: ¥6,000/month per user × 20 users = ¥120,000/month (¥1,440,000/year)
+- Initial implementation & setup fee (external vendor): ¥800,000 (one-time)
+- First-year total: ¥2,240,000
 
-## 期待効果
-- 営業担当1名あたりの案件追跡工数が週4時間 → 週1時間に削減（週3時間 × 20名 = 週60時間削減）
-- 平均時給 ¥3,500 換算で年間節約額: 3,500 × 60 × 52 = ¥10,920,000
-- 商談可視化による成約率改善: 現在の成約率12% → 15%（3%改善）を目標
-  - 月間商談数150件 × 3% = 4.5件増、1件平均売上 ¥450,000 × 4.5 = ¥2,025,000/月
-  - 年間売上貢献: ¥24,300,000
+## Expected Benefits
+- Deal-tracking workload per sales rep reduced from 4 hours/week to 1 hour/week (3 hours × 20 reps = 60 hours/week saved)
+- At an average hourly rate of ¥3,500: annual savings = 3,500 × 60 × 52 = ¥10,920,000
+- Improved close rate from better deal visibility: target improvement from current 12% to 15% (+3 points)
+  - 150 deals/month × 3% = 4.5 additional deals; average deal value ¥450,000 × 4.5 = ¥2,025,000/month
+  - Annual revenue contribution: ¥24,300,000
 
-## ROI概算
-- 1年目効果: ¥10,920,000（工数削減）＋ ¥24,300,000（売上増）= ¥35,220,000
-- 1年目コスト: ¥2,240,000
+## ROI Estimate
+- Year 1 benefit: ¥10,920,000 (labor savings) + ¥24,300,000 (revenue increase) = ¥35,220,000
+- Year 1 cost: ¥2,240,000
 - ROI: (¥35,220,000 − ¥2,240,000) ÷ ¥2,240,000 ≈ 1,472%
-- 回収期間: ¥2,240,000 ÷ ¥2,935,000/月 ≈ 0.8ヶ月（約24日）
+- Payback period: ¥2,240,000 ÷ ¥2,935,000/month ≈ 0.8 months (about 24 days)
 
-## リスク
-- 定着率が低い場合、成約率改善効果が出ない可能性あり（導入トレーニング費用 ¥200,000 追加を検討）`,
+## Risks
+- If adoption is low, the close-rate improvement may not materialize (considering an additional ¥200,000 for onboarding training)`,
 		route: [
-			{ step: 1, approver: '営業部長', role: '部長', email: 'sales-mgr@example.com' },
-			{ step: 2, approver: '経営企画室', role: 'マネージャー' },
-			{ step: 3, approver: '代表取締役', role: 'CEO' }
+			{ step: 1, approver: 'Sales Director', role: 'Director', email: 'sales-mgr@example.com' },
+			{ step: 2, approver: 'Corporate Planning Office', role: 'Manager' },
+			{ step: 3, approver: 'CEO', role: 'CEO' }
 		]
 	},
 	{
-		title: '物流倉庫作業の外部委託切り替え申請',
-		type: '調達・外注申請',
+		title: 'Warehouse Logistics Outsourcing Request',
+		type: 'Procurement / Outsourcing Request',
 		status: 'pending',
 		submittedBy: GENERAL_ID,
 		_expectedQuality: 'high',
-		content: `## 背景
-現在、倉庫ピッキング・梱包作業を正社員5名（残業込み）で対応している。繁忙期の残業コストが高く、オフシーズンの稼働率は60%以下。外部委託へ切り替えることで固定費を変動費化し、コスト最適化を図る。
+		content: `## Background
+Warehouse picking and packing is currently handled by 5 full-time employees (including overtime). Overtime costs are high during the peak season, and utilization falls below 60% in the off-season. Switching to outsourcing would convert fixed costs into variable costs and optimize overall cost.
 
-## 現状コスト
-- 正社員人件費（給与・社会保険・退職積立含む）: 5名 × ¥4,800,000/人・年 = ¥24,000,000/年
-- 残業費（繁忙期3ヶ月）: 平均 ¥280,000/月 × 3ヶ月 × 5名 = ¥4,200,000/年
-- 現状合計: ¥28,200,000/年
+## Current Cost
+- Full-time employee labor cost (including salary, social insurance, and retirement contributions): 5 employees × ¥4,800,000/person/year = ¥24,000,000/year
+- Overtime cost (3 peak-season months): average ¥280,000/month × 3 months × 5 employees = ¥4,200,000/year
+- Current total: ¥28,200,000/year
 
-## 委託後コスト見積もり
-- 基本委託料: ¥1,600,000/月（年間 ¥19,200,000）
-- 繁忙期アップチャージ（3ヶ月）: ¥400,000/月 × 3 = ¥1,200,000
-- 委託後合計: ¥20,400,000/年
+## Estimated Cost After Outsourcing
+- Base outsourcing fee: ¥1,600,000/month (¥19,200,000/year)
+- Peak-season surcharge (3 months): ¥400,000/month × 3 = ¥1,200,000
+- Total after outsourcing: ¥20,400,000/year
 
-## コスト削減効果
-- 年間削減額: ¥28,200,000 − ¥20,400,000 = ¥7,800,000
-- 削減率: 27.7%
-- 初期切り替えコスト（引き継ぎ期間の並行運用2ヶ月）: ¥3,200,000
-- 回収期間: ¥3,200,000 ÷ ¥650,000/月 ≈ 5ヶ月`,
+## Cost Reduction Impact
+- Annual savings: ¥28,200,000 − ¥20,400,000 = ¥7,800,000
+- Reduction rate: 27.7%
+- Initial transition cost (2-month parallel operation during handover): ¥3,200,000
+- Payback period: ¥3,200,000 ÷ ¥650,000/month ≈ 5 months`,
 		route: [
-			{ step: 1, approver: '物流部長', role: 'GM' },
-			{ step: 2, approver: '財務部長', role: 'CFO' }
+			{ step: 1, approver: 'Logistics Director', role: 'GM' },
+			{ step: 2, approver: 'Finance Director', role: 'CFO' }
 		]
 	},
 
 	// ─── MEDIUM data quality ──────────────────────────────────────────────────
 	{
-		title: '東京-大阪 出張申請（商談）',
-		type: '出張申請',
+		title: 'Tokyo-Osaka Business Trip Request (Client Meeting)',
+		type: 'Business Travel Request',
 		status: 'pending',
 		submittedBy: GENERAL_ID,
 		_expectedQuality: 'medium',
-		content: `## 出張目的
-株式会社テックパートナーとの商談（新規サービス拡販）。先方がオフラインでの打ち合わせを希望。
+		content: `## Purpose of Trip
+Meeting with Tech Partner Inc. (new service sales expansion). The client has requested an in-person meeting.
 
-## 日程
-2026年7月10日（木）〜 11日（金）1泊2日
+## Schedule
+Thursday, July 10, 2026 - Friday, July 11, 2026 (1 night, 2 days)
 
-## 費用内訳
-| 項目 | 金額 |
+## Cost Breakdown
+| Item | Amount |
 |------|------|
-| 新幹線（往復） | ¥28,360 |
-| 宿泊費（1泊）| ¥12,000 |
-| 交通費（市内移動）| ¥2,000 |
-| 合計 | ¥42,360 |
+| Shinkansen (round trip) | ¥28,360 |
+| Hotel (1 night) | ¥12,000 |
+| Local transportation | ¥2,000 |
+| Total | ¥42,360 |
 
-## 商談内容
-テックパートナー社は年商約50億円の製造業向けSaaSベンダー。当社製品の代理販売パートナー契約を検討中。契約に至れば継続的な収益貢献が見込まれる。
-（契約規模・成約確率は交渉中のため現時点では非公開）`,
-		route: [{ step: 1, approver: '営業マネージャー', role: 'マネージャー' }]
+## Meeting Details
+Tech Partner Inc. is a SaaS vendor for the manufacturing industry with annual revenue of approximately ¥5 billion. They are considering a reseller partnership agreement for our product. If the contract is finalized, it is expected to contribute ongoing revenue.
+(Contract size and close probability are undisclosed, as they are still under negotiation.)`,
+		route: [{ step: 1, approver: 'Sales Manager', role: 'Manager' }]
 	},
 	{
-		title: '開発チーム用高性能ノートPC購入申請',
-		type: '備品購入申請',
+		title: 'High-Performance Laptop Purchase Request for Dev Team',
+		type: 'Equipment Purchase Request',
 		status: 'pending',
 		submittedBy: GENERAL_ID,
 		_expectedQuality: 'medium',
-		content: `## 申請内容
-開発エンジニア3名の既存PCが4年以上経過し、ビルド時間・テスト実行時間が長くなっており生産性に影響が出ている。最新スペックのノートPCへ更新を申請する。
+		content: `## Request Details
+The existing PCs used by 3 development engineers are over 4 years old, and build/test execution times have grown, impacting productivity. Requesting an upgrade to laptops with the latest specs.
 
-## 機種・費用
-- Apple MacBook Pro 14インチ（M4 Pro、32GBメモリ、512GB SSD）
-- 単価: ¥258,000（税込）
-- 台数: 3台
-- 合計: ¥774,000
+## Model & Cost
+- Apple MacBook Pro 14-inch (M4 Pro, 32GB RAM, 512GB SSD)
+- Unit price: ¥258,000 (tax included)
+- Quantity: 3 units
+- Total: ¥774,000
 
-## 期待効果
-- ビルド時間が現状の平均8分 → 推定2分に短縮（75%削減見込み）
-- 1日あたりビルド回数: 平均12回/人
-- 短縮時間: 6分/回 × 12回 × 3名 = 216分/日 ≈ 3.6時間/日
+## Expected Benefits
+- Build time reduced from an average of 8 minutes to an estimated 2 minutes (75% reduction expected)
+- Average builds per day: 12 per person
+- Time saved: 6 min/build × 12 builds × 3 people = 216 min/day ≈ 3.6 hours/day
 
-（時給換算は人事規定のため非公開）`,
+(Hourly-rate conversion withheld per HR policy)`,
 		route: [
-			{ step: 1, approver: '開発部長', role: '部長' },
-			{ step: 2, approver: '総務部', role: '経理担当' }
+			{ step: 1, approver: 'Development Director', role: 'Director' },
+			{ step: 2, approver: 'General Affairs', role: 'Accounting' }
 		]
 	},
 
 	// ─── LOW data quality ─────────────────────────────────────────────────────
 	{
-		title: '採用広報SNS強化施策申請',
-		type: 'マーケティング申請',
+		title: 'Recruitment Branding SNS Campaign Request',
+		type: 'Marketing Request',
 		status: 'pending',
 		submittedBy: ADMIN_ID,
 		_expectedQuality: 'low',
-		content: `## 背景
-エンジニア採用において候補者の認知度が低く、採用コストが高い状況が続いている。採用広報としてSNS（X / LinkedIn）の情報発信を強化し、採用ブランドを向上させたい。
+		content: `## Background
+Engineering recruitment suffers from low candidate awareness, resulting in ongoing high hiring costs. We want to strengthen our recruitment branding through social media (X / LinkedIn) to raise our employer brand.
 
-## 施策内容
-- 週2〜3回のテック系コンテンツ投稿（エンジニアブログとの連動）
-- 採用担当がX・LinkedInのアカウントを運用
-- 必要であれば外部ライターへの記事制作委託を検討
+## Proposed Activities
+- Post tech-related content 2-3 times per week (in coordination with the engineering blog)
+- Recruiting staff will manage the X and LinkedIn accounts
+- Consider outsourcing article writing to an external writer if needed
 
-## 目標
-- フォロワー数を半年で現状比2倍
-- 自社への応募数増加
-- 採用単価の低減
+## Goals
+- Double follower count within 6 months
+- Increase direct applications to the company
+- Reduce cost per hire
 
-## 予算・費用
-現時点では詳細未定。外部ライター利用の場合は月数万円程度を想定しているが、まず社内リソースで試してみる方針。`,
+## Budget & Cost
+Details are not yet finalized. If an external writer is used, we estimate a few hundred thousand yen per month, but we plan to first try using internal resources.`,
 		route: [
-			{ step: 1, approver: '人事部長', role: 'CHRO' },
-			{ step: 2, approver: '代表取締役', role: 'CEO' }
+			{ step: 1, approver: 'HR Director', role: 'CHRO' },
+			{ step: 2, approver: 'CEO', role: 'CEO' }
 		]
 	},
 	{
-		title: 'コーポレートサイトリニューアル検討',
-		type: 'マーケティング申請',
+		title: 'Corporate Website Renewal Proposal',
+		type: 'Marketing Request',
 		status: 'draft',
 		submittedBy: GENERAL_ID,
 		_expectedQuality: 'low',
-		content: `コーポレートサイトが古くなってきた。デザインをリニューアルして採用・営業面での印象を上げたい。
+		content: `Our corporate website is starting to feel outdated. We'd like to renew the design to improve our impression with recruiting candidates and sales prospects.
 
-費用感やスケジュールはまだ見積もり依頼中。詳細が固まったら正式申請する予定。`,
-		route: [{ step: 1, approver: '代表取締役', role: 'CEO' }]
+Cost and schedule estimates are still being requested from vendors. We plan to submit a formal request once the details are finalized.`,
+		route: [{ step: 1, approver: 'CEO', role: 'CEO' }]
 	},
 
 	// ─── INSUFFICIENT ─────────────────────────────────────────────────────────
 	{
-		title: '新規プロジェクト申請',
-		type: '申請',
+		title: 'New Project Request',
+		type: 'Request',
 		status: 'draft',
 		submittedBy: GENERAL_ID,
 		_expectedQuality: 'insufficient',
-		content: `検討中。後で記入する。`,
-		route: [{ step: 1, approver: '部長' }]
+		content: `Still under consideration. Will fill in the details later.`,
+		route: [{ step: 1, approver: 'Director' }]
 	},
 	{
-		title: 'ツール導入の件',
-		type: '申請',
+		title: 'Tool Adoption Request',
+		type: 'Request',
 		status: 'pending',
 		submittedBy: GENERAL_ID,
 		_expectedQuality: 'insufficient',
-		content: `新しいツールを使いたい。承認よろしくお願いします。`,
-		route: [{ step: 1, approver: '管理者太郎', role: '管理者' }]
+		content: `I'd like to start using a new tool. Please approve.`,
+		route: [{ step: 1, approver: 'Admin User', role: 'Administrator' }]
 	}
 ];
 

@@ -29,7 +29,7 @@
 	const STEP_ICONS: Record<string, string> = {
 		pending: '○', approved: '✓', rejected: '✗'
 	};
-	const RISK_LABELS: Record<string, string> = { low: '低', medium: '中', high: '高' };
+	const RISK_LABELS: Record<string, string> = { low: 'Low', medium: 'Medium', high: 'High' };
 
 	let returnLoading = $state(false);
 
@@ -64,7 +64,7 @@
 			const res = await fetch(`/api/approvals/${row.id}/analyze`, { method: 'POST' });
 			const result = await res.json() as ApprovalAnalysisResult & { error?: string };
 			if (!res.ok) {
-				analysisError = (result as { error?: string }).error ?? 'AI分析に失敗しました。';
+				analysisError = (result as { error?: string }).error ?? 'AI analysis failed.';
 				return;
 			}
 			analysis = result;
@@ -94,7 +94,7 @@
 	}
 
 	async function cancel() {
-		if (!row || !confirm('この申請を取り消しますか？')) return;
+		if (!row || !confirm('Cancel this request?')) return;
 		const res = await fetch(`/api/approvals/${row.id}`, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
@@ -128,14 +128,14 @@
 
 <div class="page">
 	{#if !row}
-		<p class="status">申請が見つかりません。</p>
+		<p class="status">Request not found.</p>
 	{:else}
 		{#if row.status === 'pending' || row.status === 'draft'}
 			<header class="page-header">
 				{#if row.status === 'draft'}
-					<a class="btn-edit" href="/approvals/{row.id}/edit">編集</a>
+					<a class="btn-edit" href="/approvals/{row.id}/edit">Edit</a>
 				{/if}
-				<button class="btn-danger-outline" onclick={cancel} disabled={actionLoading}>取り消し</button>
+				<button class="btn-danger-outline" onclick={cancel} disabled={actionLoading}>Cancel</button>
 			</header>
 		{/if}
 
@@ -149,36 +149,36 @@
 			</div>
 			<div class="meta-row">
 				{#if row.submittedBy}
-					<span class="meta-item"><span class="meta-label">申請者</span>{row.submittedBy}</span>
+					<span class="meta-item"><span class="meta-label">Requester</span>{row.submittedBy}</span>
 				{/if}
-				<span class="meta-item"><span class="meta-label">申請日</span>{fmtDate(row.createdAt)}</span>
-				<span class="meta-item"><span class="meta-label">更新日</span>{fmtDate(row.updatedAt)}</span>
+				<span class="meta-item"><span class="meta-label">Submitted</span>{fmtDate(row.createdAt)}</span>
+				<span class="meta-item"><span class="meta-label">Updated</span>{fmtDate(row.updatedAt)}</span>
 			</div>
 		</div>
 
 		<!-- Content -->
 		{#if row.content}
 			<section class="section">
-				<h2 class="section-title">申請内容</h2>
+				<h2 class="section-title">Request content</h2>
 				<div class="content-box">{row.content}</div>
 			</section>
 		{/if}
 
-		<!-- 差し戻しコメント -->
+		<!-- Return comment -->
 		{#if row.status === 'draft' && row.returnComment}
 			<div class="return-banner">
-				<span class="return-label">差し戻しコメント</span>
+				<span class="return-label">Return comment</span>
 				<p class="return-comment">{row.returnComment}</p>
 			</div>
 		{/if}
 
-		<!-- AI分析 -->
+		<!-- AI analysis -->
 		{#if row.status === 'pending'}
 			<section class="section">
 				<div class="section-head">
-					<h2 class="section-title">AI分析</h2>
+					<h2 class="section-title">AI Analysis</h2>
 					<button class="btn-ai-review" onclick={runAnalysis} disabled={analysisLoading}>
-						{#if analysisLoading}分析中...{:else if analysis}↻ 再分析{:else}✨ AI分析を実行{/if}
+						{#if analysisLoading}Analyzing...{:else if analysis}↻ Re-analyze{:else}✨ Run AI analysis{/if}
 					</button>
 				</div>
 				{#if analysisError}
@@ -190,7 +190,7 @@
 							<p class="insufficient-reason">{analysis.reason}</p>
 							{#if analysis.suggestions.length > 0}
 								<div class="ai-review-group">
-									<h3 class="ai-review-group-title">追記すると分析できます</h3>
+									<h3 class="ai-review-group-title">Add these details to enable analysis</h3>
 									<ul class="ai-review-list ai-review-checks">
 										{#each analysis.suggestions as item}<li>{item}</li>{/each}
 									</ul>
@@ -198,17 +198,17 @@
 							{/if}
 						</div>
 					{:else}
-						<!-- Block 1: 申請レビュー -->
+						<!-- Block 1: Request review -->
 						<div class="analysis-block">
-							<h3 class="block-title">申請レビュー</h3>
+							<h3 class="block-title">Request Review</h3>
 							<div class="analysis-review">
 								<span class="risk-badge risk-{analysis.riskLevel}">
-									リスク: {RISK_LABELS[analysis.riskLevel] ?? analysis.riskLevel}
+									Risk: {RISK_LABELS[analysis.riskLevel] ?? analysis.riskLevel}
 								</span>
 								<p class="ai-review-summary">{analysis.reviewSummary}</p>
 								{#if analysis.concerns.length > 0}
 									<div class="ai-review-group">
-										<h3 class="ai-review-group-title">問題点</h3>
+										<h3 class="ai-review-group-title">Concerns</h3>
 										<ul class="ai-review-list ai-review-concerns">
 											{#each analysis.concerns as item}<li>{item}</li>{/each}
 										</ul>
@@ -216,7 +216,7 @@
 								{/if}
 								{#if analysis.suggestions?.length > 0}
 									<div class="ai-review-group">
-										<h3 class="ai-review-group-title">改善提案</h3>
+										<h3 class="ai-review-group-title">Suggestions</h3>
 										<ul class="ai-review-list ai-review-suggestions">
 											{#each analysis.suggestions as item}<li>{item}</li>{/each}
 										</ul>
@@ -224,7 +224,7 @@
 								{/if}
 								{#if analysis.checks.length > 0}
 									<div class="ai-review-group">
-										<h3 class="ai-review-group-title">確認事項</h3>
+										<h3 class="ai-review-group-title">Checks</h3>
 										<ul class="ai-review-list ai-review-checks">
 											{#each analysis.checks as item}<li>{item}</li>{/each}
 										</ul>
@@ -234,19 +234,19 @@
 						</div>
 
 						{#if analysis.financialApplicable}
-							<!-- Block 2: 効果分析 -->
+							<!-- Block 2: Impact analysis -->
 							<div class="analysis-block">
-								<h3 class="block-title">効果分析</h3>
+								<h3 class="block-title">Impact Analysis</h3>
 								<div class="analysis-metrics">
 									{#if analysis.financialSummary}
 										<p class="ai-review-summary">{analysis.financialSummary}</p>
 									{/if}
 									<div class="metrics-badges">
 										<span class="data-quality-badge dq-{analysis.dataQuality}">
-											データ充足度: {analysis.dataQuality === 'high' ? '高' : analysis.dataQuality === 'medium' ? '中' : '低'}
+											Data sufficiency: {analysis.dataQuality === 'high' ? 'High' : analysis.dataQuality === 'medium' ? 'Medium' : 'Low'}
 										</span>
 										{#if analysis.roi}<span class="kpi-pill">ROI {analysis.roi}</span>{/if}
-										{#if analysis.paybackPeriod}<span class="kpi-pill">回収期間 {analysis.paybackPeriod}</span>{/if}
+										{#if analysis.paybackPeriod}<span class="kpi-pill">Payback period {analysis.paybackPeriod}</span>{/if}
 									</div>
 									{#if analysis.keyFigures && analysis.keyFigures.length > 0}
 										<div class="kpi-cards">
@@ -254,23 +254,23 @@
 												<div class="kpi-card">
 													<span class="kpi-label">{fig.label}</span>
 													<span class="kpi-value">{fig.value}</span>
-													{#if fig.quote}<span class="kpi-desc">「{fig.quote}」</span>{/if}
+													{#if fig.quote}<span class="kpi-desc">"{fig.quote}"</span>{/if}
 												</div>
 											{/each}
 										</div>
 									{/if}
 									{#if analysis.roiFormula || analysis.paybackFormula}
 										<div class="ai-review-group">
-											<h3 class="ai-review-group-title">計算式</h3>
+											<h3 class="ai-review-group-title">Formula</h3>
 											<ul class="formula-list">
 												{#if analysis.roiFormula}<li>ROI: {analysis.roiFormula}</li>{/if}
-												{#if analysis.paybackFormula}<li>回収期間: {analysis.paybackFormula}</li>{/if}
+												{#if analysis.paybackFormula}<li>Payback period: {analysis.paybackFormula}</li>{/if}
 											</ul>
 										</div>
 									{/if}
 									{#if analysis.riskPoints && analysis.riskPoints.length > 0}
 										<div class="ai-review-group">
-											<h3 class="ai-review-group-title">リスクポイント</h3>
+											<h3 class="ai-review-group-title">Risk points</h3>
 											<ul class="ai-review-list ai-review-concerns">
 												{#each analysis.riskPoints as item}<li>{item}</li>{/each}
 											</ul>
@@ -278,7 +278,7 @@
 									{/if}
 									{#if analysis.missingData && analysis.missingData.length > 0}
 										<div class="ai-review-group">
-											<h3 class="ai-review-group-title">精度向上に必要な情報</h3>
+											<h3 class="ai-review-group-title">Information needed to improve accuracy</h3>
 											<ul class="ai-review-list ai-review-checks">
 												{#each analysis.missingData as item}<li>{item}</li>{/each}
 											</ul>
@@ -287,7 +287,7 @@
 								</div>
 							</div>
 
-							<!-- Block 3: シミュレーション -->
+							<!-- Block 3: Simulation -->
 							<ApprovalAnalysisChat
 								approvalId={row.id}
 								analysis={analysis as ApprovalAnalysisAnalyzed}
@@ -301,7 +301,7 @@
 		<!-- Attachments -->
 		{#if row.attachments.length > 0}
 			<section class="section">
-				<h2 class="section-title">添付ファイル</h2>
+				<h2 class="section-title">Attachments</h2>
 				<ul class="att-list">
 					{#each row.attachments as att}
 						<li class="att-item">
@@ -317,7 +317,7 @@
 									<polyline points="7 10 12 15 17 10"/>
 									<line x1="12" y1="15" x2="12" y2="3"/>
 								</svg>
-								ダウンロード
+								Download
 							</a>
 						</li>
 					{/each}
@@ -327,9 +327,9 @@
 
 		<!-- Approval route -->
 		<section class="section">
-			<h2 class="section-title">承認ルート</h2>
+			<h2 class="section-title">Approval route</h2>
 			{#if row.route.length === 0}
-				<p class="empty-hint">承認ステップが設定されていません。</p>
+				<p class="empty-hint">No approval steps are configured.</p>
 			{:else}
 				<div class="route-list">
 					{#each row.route as step, i}
@@ -357,14 +357,14 @@
 									<div class="step-actions">
 										<textarea
 											class="comment-input"
-											placeholder="コメント（任意）"
+											placeholder="Comment (optional)"
 											bind:value={comments[i]}
 											rows="6"
 										></textarea>
 										<div class="action-btns">
-											<button class="btn-approve" onclick={() => act(i, 'approve_step')} disabled={actionLoading || returnLoading}>承認</button>
-											<button class="btn-reject" onclick={() => act(i, 'reject_step')} disabled={actionLoading || returnLoading}>棄却</button>
-											<button class="btn-return" onclick={() => returnApproval(i)} disabled={actionLoading || returnLoading}>差し戻し</button>
+											<button class="btn-approve" onclick={() => act(i, 'approve_step')} disabled={actionLoading || returnLoading}>Approve</button>
+											<button class="btn-reject" onclick={() => act(i, 'reject_step')} disabled={actionLoading || returnLoading}>Reject</button>
+											<button class="btn-return" onclick={() => returnApproval(i)} disabled={actionLoading || returnLoading}>Return</button>
 										</div>
 									</div>
 								{/if}
@@ -464,7 +464,7 @@
 	}
 	.section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 
-	/* AI分析 */
+	/* AI analysis */
 	.btn-ai-review {
 		padding: 6px 14px;
 		background: none;

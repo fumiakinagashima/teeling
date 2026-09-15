@@ -13,7 +13,7 @@ export const GET: RequestHandler = async ({ params, platform }) => {
 
 export const PUT: RequestHandler = async ({ params, request, platform, locals }) => {
 	if (!platform?.env?.DB) return json({ error: 'DB not available' }, { status: 500 });
-	if (locals.account?.permission !== 'admin') return json({ error: '権限がありません' }, { status: 403 });
+	if (locals.account?.permission !== 'admin') return json({ error: 'Permission denied' }, { status: 403 });
 	const db = createDb(platform.env.DB);
 	const body = await request.json() as Parameters<typeof updateTemplate>[2];
 	const row = await updateTemplate(db, params.id, body);
@@ -22,7 +22,7 @@ export const PUT: RequestHandler = async ({ params, request, platform, locals })
 
 export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
 	if (!platform?.env?.DB) return json({ error: 'DB not available' }, { status: 500 });
-	if (locals.account?.permission !== 'admin') return json({ error: '権限がありません' }, { status: 403 });
+	if (locals.account?.permission !== 'admin') return json({ error: 'Permission denied' }, { status: 403 });
 	const db = createDb(platform.env.DB);
 	await deleteTemplate(db, params.id);
 	return new Response(null, { status: 204 });

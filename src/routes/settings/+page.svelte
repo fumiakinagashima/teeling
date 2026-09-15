@@ -35,10 +35,10 @@
 </script>
 
 <div class="page">
-	<h1>設定</h1>
+	<h1>Settings</h1>
 
 	<nav class="subnav">
-		<a href="/settings" class:active={currentPath === '/settings'}>一般</a>
+		<a href="/settings" class:active={currentPath === '/settings'}>General</a>
 		{#if data.account.permission === 'admin'}
 			<a href="/settings/integrations" class:active={currentPath === '/settings/integrations'}>{m.integrations()}</a>
 		{/if}
@@ -46,12 +46,12 @@
 			<a href="/settings/email" class:active={currentPath === '/settings/email'}>{m.email_settings()}</a>
 			<a href="/settings/ai" class:active={currentPath === '/settings/ai'}>{m.ai_settings()}</a>
 		{/if}
-		<a href="/settings/account" class:active={currentPath === '/settings/account'}>プロフィール</a>
-		<a href="/settings/account/password" class:active={currentPath === '/settings/account/password'}>パスワード変更</a>
+		<a href="/settings/account" class:active={currentPath === '/settings/account'}>Profile</a>
+		<a href="/settings/account/password" class:active={currentPath === '/settings/account/password'}>Change Password</a>
 	</nav>
 
 	<section>
-		<h2>テーマ</h2>
+		<h2>Theme</h2>
 		<div class="theme-switcher">
 			{#each THEME_OPTIONS as opt}
 				<button
@@ -66,11 +66,11 @@
 	</section>
 
 	<section>
-		<h2>AIアシスタント</h2>
+		<h2>AI Assistant</h2>
 		<div class="row">
 			<div class="row-info">
 				<span class="label">{m.settings_enter_to_send()}</span>
-				<span class="desc">申請作成・確認ダイアログのAIチャットに適用されます（改行は Shift+Enter）</span>
+				<span class="desc">Applies to the AI chat in the request creation/review dialogs (use Shift+Enter for a new line)</span>
 			</div>
 			<Toggle bind:checked={enterToSend} />
 		</div>

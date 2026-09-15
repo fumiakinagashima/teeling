@@ -27,7 +27,7 @@ export async function notifyApproversOnCreate(
 				from: setup.from,
 				fromName: setup.fromName,
 				to: s.email!,
-				subject: `【承認依頼】${approval.title}`,
+				subject: `[Approval Request] ${approval.title}`,
 				text: buildApproverBody(s.approver, approval, baseUrl)
 			})
 		)
@@ -44,21 +44,21 @@ export async function notifyAfterStepAction(
 	const { status } = updatedApproval;
 
 	if (status === 'approved' || status === 'rejected') {
-		// 申請者にメール
+		// Email the requester
 		const applicantEmail = await getApplicantEmail(db, updatedApproval.submittedByAccountId);
 		if (applicantEmail) {
 			await sendEmail(setup.providerConfig, {
 				from: setup.from,
 				fromName: setup.fromName,
 				to: applicantEmail,
-				subject: `【${statusLabel(status)}】${updatedApproval.title}`,
+				subject: `[${statusLabel(status)}] ${updatedApproval.title}`,
 				text: buildApplicantBody(updatedApproval.submittedBy, updatedApproval, status, undefined, baseUrl)
 			}).catch(() => {});
 		}
 		return;
 	}
 
-	// まだ pending → 新たに担当になった承認者を特定して通知
+	// Still pending → identify newly assigned approvers and notify them
 	const prevActive = new Set(activeApprovers(prevRoute).map((s) => s.accountId ?? s.email ?? s.approver));
 	const newActive = activeApprovers(updatedApproval.route).filter(
 		(s) => !prevActive.has(s.accountId ?? s.email ?? s.approver) && s.email
@@ -70,7 +70,7 @@ export async function notifyAfterStepAction(
 				from: setup.from,
 				fromName: setup.fromName,
 				to: s.email!,
-				subject: `【承認依頼】${updatedApproval.title}`,
+				subject: `[Approval Request] ${updatedApproval.title}`,
 				text: buildApproverBody(s.approver, updatedApproval, baseUrl)
 			})
 		)
@@ -90,7 +90,7 @@ export async function notifyApplicantOnReturn(
 		from: setup.from,
 		fromName: setup.fromName,
 		to: applicantEmail,
-		subject: `【差し戻し】${approval.title}`,
+		subject: `[Returned] ${approval.title}`,
 		text: buildApplicantBody(approval.submittedBy, approval, 'returned', comment, baseUrl)
 	}).catch(() => {});
 }
@@ -102,25 +102,25 @@ async function getApplicantEmail(db: Db, accountId: string): Promise<string | nu
 }
 
 function statusLabel(status: string): string {
-	if (status === 'approved') return '承認完了';
-	if (status === 'rejected') return '否決';
-	return '差し戻し';
+	if (status === 'approved') return 'Approved';
+	if (status === 'rejected') return 'Rejected';
+	return 'Returned';
 }
 
 function buildApproverBody(approverName: string, approval: ApprovalRow, baseUrl: string): string {
-	return `${approverName} 様
+	return `Dear ${approverName},
 
-承認依頼が届いています。内容をご確認のうえ、承認または差し戻しをお願いします。
+An approval request has arrived. Please review the details and approve or return it.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-申請名: ${approval.title}
-申請者: ${approval.submittedBy}
+Request: ${approval.title}
+Requester: ${approval.submittedBy}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-以下のリンクから申請内容を確認できます:
+You can review the request details at the link below:
 ${approvalUrl(baseUrl, approval.id)}
 
-このメールはシステムから自動送信されています。
+This email was sent automatically by the system.
 `.trim();
 }
 
@@ -132,19 +132,19 @@ function buildApplicantBody(
 	baseUrl: string
 ): string {
 	const label = statusLabel(event);
-	const commentLine = comment ? `\nコメント: ${comment}` : '';
-	return `${applicantName} 様
+	const commentLine = comment ? `\nComment: ${comment}` : '';
+	return `Dear ${applicantName},
 
-申請の状況が更新されました。
+The status of your request has been updated.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-申請名: ${approval.title}
-ステータス: ${label}${commentLine}
+Request: ${approval.title}
+Status: ${label}${commentLine}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-以下のリンクから申請内容を確認できます:
+You can review the request details at the link below:
 ${approvalUrl(baseUrl, approval.id)}
 
-このメールはシステムから自動送信されています。
+This email was sent automatically by the system.
 `.trim();
 }

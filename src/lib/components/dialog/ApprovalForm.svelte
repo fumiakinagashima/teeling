@@ -116,7 +116,7 @@
 	async function runAiReview() {
 		if (aiReviewLoading) return;
 		if (!title.trim() && !content.trim()) {
-			aiReviewError = 'タイトルまたは申請内容を入力してください。';
+			aiReviewError = 'Please enter a title or request content.';
 			return;
 		}
 		aiReviewLoading = true;
@@ -136,7 +136,7 @@
 			});
 			const result = await res.json() as ApprovalDraftReviewResult & { error?: string };
 			if (!res.ok) {
-				aiReviewError = result.error ?? 'AIレビューに失敗しました。';
+				aiReviewError = result.error ?? 'AI review failed.';
 				return;
 			}
 			aiReview = result;
@@ -162,7 +162,7 @@
 		if (!input.files) return;
 		for (const file of input.files) {
 			if (file.size > MAX_FILE_BYTES) {
-				fileError = `${file.name} は10MBを超えています。`;
+				fileError = `${file.name} exceeds 10MB.`;
 				continue;
 			}
 			if (!pendingFiles.find(f => f.name === file.name && f.size === file.size)) {
@@ -215,13 +215,13 @@
 		try {
 			return await uploadFiles();
 		} catch (e) {
-			error = `ファイルのアップロードに失敗しました: ${e instanceof Error ? e.message : String(e)}`;
+			error = `File upload failed: ${e instanceof Error ? e.message : String(e)}`;
 			return false;
 		}
 	}
 
 	async function saveDraft() {
-		if (!title.trim()) { error = 'タイトルは必須です。'; return; }
+		if (!title.trim()) { error = 'Title is required.'; return; }
 		draftSaving = true;
 		error = '';
 		try {
@@ -236,7 +236,7 @@
 				});
 				if (!res.ok) { const e = await res.json() as { error: string }; error = e.error; return; }
 				const row = await res.json() as { id: string };
-				toast.success('下書きを保存しました');
+				toast.success('Draft saved');
 				onSaved?.(row.id);
 			} else {
 				const res = await fetch('/api/approvals', {
@@ -257,7 +257,7 @@
 				});
 				if (!res.ok) { const e = await res.json() as { error: string }; error = e.error; return; }
 				const row = await res.json() as { id: string };
-				toast.success('下書きを保存しました');
+				toast.success('Draft saved');
 				onCreated?.(row.id);
 			}
 		} finally {
@@ -266,10 +266,10 @@
 	}
 
 	async function submit() {
-		if (!title.trim()) { error = 'タイトルは必須です。'; return; }
-		if (!routeEntries.some(r => r.accountId)) { error = '承認者を1名以上選択してください。'; return; }
-		if (routeEntries.some(r => !r.accountId)) { error = '承認者をすべて選択してください。'; return; }
-		if (!confirm('申請すると内容の修正ができなくなります。\nよろしいですか？')) return;
+		if (!title.trim()) { error = 'Title is required.'; return; }
+		if (!routeEntries.some(r => r.accountId)) { error = 'Please select at least one approver.'; return; }
+		if (routeEntries.some(r => !r.accountId)) { error = 'Please select an approver for every step.'; return; }
+		if (!confirm('Once submitted, the request can no longer be edited.\nAre you sure?')) return;
 
 		saving = true;
 		error = '';
@@ -285,7 +285,7 @@
 				});
 				if (!res.ok) { const e = await res.json() as { error: string }; error = e.error; return; }
 				const row = await res.json() as { id: string };
-				toast.success('申請しました');
+				toast.success('Request submitted');
 				onSaved?.(row.id);
 			} else {
 				const res = await fetch('/api/approvals', {
@@ -306,7 +306,7 @@
 				});
 				if (!res.ok) { const e = await res.json() as { error: string }; error = e.error; return; }
 				const row = await res.json() as { id: string };
-				toast.success('申請しました');
+				toast.success('Request submitted');
 				onCreated?.(row.id);
 			}
 		} finally {
@@ -321,13 +321,13 @@
 		<!-- Template -->
 		{#if templates.length > 0}
 			<div class="field">
-				<label>テンプレート（任意）</label>
+				<label>Template (optional)</label>
 				<select
 					class="template-select"
 					value={selectedTemplateId}
 					onchange={(e) => onTemplateChange((e.target as HTMLSelectElement).value)}
 				>
-					<option value="">— 使用しない —</option>
+					<option value="">— None —</option>
 					{#each templates as t}
 						<option value={t.id}>{t.name}</option>
 					{/each}
@@ -337,20 +337,20 @@
 
 		<!-- Title -->
 		<div class="field">
-			<label>タイトル <span class="req">*</span></label>
-			<input type="text" bind:value={title} placeholder="例: ABC社 特別値引き申請" autofocus />
+			<label>Title <span class="req">*</span></label>
+			<input type="text" bind:value={title} placeholder="e.g. Special discount request for ABC Corp" autofocus />
 		</div>
 
 		<!-- Content -->
 		<div class="field">
-			<label>申請内容</label>
-			<textarea class="content-input" bind:value={content} rows="12" placeholder="申請の背景・理由・詳細を記入してください。"></textarea>
+			<label>Request content</label>
+			<textarea class="content-input" bind:value={content} rows="12" placeholder="Enter the background, reason, and details of the request."></textarea>
 		</div>
 
 		<!-- Custom Fields -->
 		{#if currentTemplate && currentTemplate.customFields.length > 0}
 			<div class="field">
-				<label>カスタムフィールド</label>
+				<label>Custom fields</label>
 				<div class="custom-fields">
 					{#each currentTemplate.customFields as field}
 						<div class="custom-field">
@@ -375,14 +375,14 @@
 		<!-- AI Review (draft) -->
 		<div class="field">
 			<div class="field-header">
-				<label>AIレビュー <span class="limit">（提出前のチェック）</span></label>
+				<label>AI review <span class="limit">(check before submitting)</span></label>
 				<button type="button" class="btn-ai-review" onclick={runAiReview} disabled={aiReviewLoading}>
 					{#if aiReviewLoading}
-						レビュー中...
+						Reviewing...
 					{:else if aiReview}
-						✨ 再レビュー
+						✨ Review again
 					{:else}
-						✨ 内容をAIにレビューしてもらう
+						✨ Have AI review the content
 					{/if}
 				</button>
 			</div>
@@ -394,7 +394,7 @@
 					<p class="ai-review-summary">{aiReview.summary}</p>
 					{#if aiReview.issues.length > 0}
 						<div class="ai-review-group">
-							<h3 class="ai-review-group-title">誤字脱字・表現</h3>
+							<h3 class="ai-review-group-title">Typos and wording</h3>
 							<ul class="ai-review-list">
 								{#each aiReview.issues as item}
 									<li>{item}</li>
@@ -404,7 +404,7 @@
 					{/if}
 					{#if aiReview.missing.length > 0}
 						<div class="ai-review-group">
-							<h3 class="ai-review-group-title">不足している情報</h3>
+							<h3 class="ai-review-group-title">Missing information</h3>
 							<ul class="ai-review-list">
 								{#each aiReview.missing as item}
 									<li>{item}</li>
@@ -414,7 +414,7 @@
 					{/if}
 					{#if aiReview.suggestions.length > 0}
 						<div class="ai-review-group">
-							<h3 class="ai-review-group-title">改善提案</h3>
+							<h3 class="ai-review-group-title">Suggestions</h3>
 							<ul class="ai-review-list">
 								{#each aiReview.suggestions as item}
 									<li>{item}</li>
@@ -428,7 +428,7 @@
 
 		<!-- Attachments -->
 		<div class="field">
-			<label>添付ファイル <span class="limit">（1ファイル最大10MB）</span></label>
+			<label>Attachments <span class="limit">(max 10MB per file)</span></label>
 			<label class="file-drop">
 				<input type="file" multiple onchange={handleFiles} class="file-hidden" />
 				<span class="file-icon">
@@ -438,7 +438,7 @@
 						<line x1="12" y1="3" x2="12" y2="15"/>
 					</svg>
 				</span>
-				<span>クリックまたはドラッグしてファイルを追加</span>
+				<span>Click or drag to add a file</span>
 			</label>
 			{#if fileError}
 				<p class="file-error">{fileError}</p>
@@ -459,8 +459,8 @@
 		<!-- Route -->
 		<div class="field">
 			<div class="field-header">
-				<label>承認ルート <span class="req">*</span></label>
-				<button type="button" class="btn-add-step" onclick={addStep}>+ 承認者追加</button>
+				<label>Approval route <span class="req">*</span></label>
+				<button type="button" class="btn-add-step" onclick={addStep}>+ Add approver</button>
 			</div>
 			<div class="route-list">
 				{#each routeEntries as entry, i}
@@ -470,15 +470,15 @@
 							<input type="number" class="step-num-input" bind:value={entry.step} min="1" />
 						</div>
 						<div class="sub-field sub-field-wide">
-							<label>承認者 <span class="req">*</span></label>
+							<label>Approver <span class="req">*</span></label>
 							<select
 								class="account-select"
 								value={entry.accountId}
 								onchange={(e) => selectAccount(entry, (e.target as HTMLSelectElement).value)}
 							>
-								<option value="">— 承認者を選択 —</option>
+								<option value="">— Select an approver —</option>
 								{#each accountOptions as acc}
-									<option value={acc.id}>{acc.name}{acc.role ? `（${acc.role}）` : ''}</option>
+									<option value={acc.id}>{acc.name}{acc.role ? ` (${acc.role})` : ''}</option>
 								{/each}
 							</select>
 						</div>
@@ -488,7 +488,7 @@
 					</div>
 				{/each}
 			</div>
-			<p class="hint">同じStep番号にすると並列承認（AND）になります。</p>
+			<p class="hint">Using the same Step number makes it a parallel approval (AND).</p>
 		</div>
 
 		{#if error}
@@ -496,12 +496,12 @@
 		{/if}
 
 		<div class="form-actions">
-			<button type="button" class="btn-cancel" onclick={() => oncancel?.()}>キャンセル</button>
+			<button type="button" class="btn-cancel" onclick={() => oncancel?.()}>Cancel</button>
 			<button type="button" class="btn-draft" onclick={saveDraft} disabled={saving || draftSaving}>
-				{draftSaving ? '保存中...' : '下書き保存'}
+				{draftSaving ? 'Saving...' : 'Save draft'}
 			</button>
 			<button type="submit" class="btn-submit" disabled={saving || draftSaving}>
-				{saving ? '申請中...' : '申請する'}
+				{saving ? 'Submitting...' : 'Submit'}
 			</button>
 		</div>
 	</form>

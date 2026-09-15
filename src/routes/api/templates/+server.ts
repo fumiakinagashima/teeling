@@ -12,7 +12,7 @@ export const GET: RequestHandler = async ({ platform }) => {
 
 export const POST: RequestHandler = async ({ request, platform, locals }) => {
 	if (!platform?.env?.DB) return json({ error: 'DB not available' }, { status: 500 });
-	if (locals.account?.permission !== 'admin') return json({ error: '権限がありません' }, { status: 403 });
+	if (locals.account?.permission !== 'admin') return json({ error: 'Permission denied' }, { status: 403 });
 	const db = createDb(platform.env.DB);
 	const body = await request.json() as Parameters<typeof createTemplate>[1];
 	const row = await createTemplate(db, body);

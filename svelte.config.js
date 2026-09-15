@@ -16,8 +16,8 @@ const config = {
 			config: 'wrangler.build.jsonc',
 			platformProxy: {
 				enabled: true,
-				// wrangler.toml のトップレベルは本番用の実ID。`bun dev`（vite）はここで
-				// [env.local] を指定し、ローカル用のダミーID（D1/KV）に接続する。
+				// The top level of wrangler.toml holds the real production IDs. `bun dev`
+				// (vite) points here at [env.local] to use local dummy D1/KV IDs instead.
 				environment: 'local',
 				persist: { path: '.wrangler/state/v3' }
 			}

@@ -7,8 +7,8 @@
 	let { data }: { data: PageData } = $props();
 
 	const chatContextFields = [
-		{ key: 'title', label: 'タイトル' },
-		{ key: 'content', label: '申請内容' }
+		{ key: 'title', label: 'Title' },
+		{ key: 'content', label: 'Request Content' }
 	];
 
 	let title = $state(data.row.title);
@@ -18,7 +18,7 @@
 <div class="page">
 	<div class="content-side">
 		<div class="content-inner">
-			<h2 class="page-title">申請を編集</h2>
+			<h2 class="page-title">Edit Request</h2>
 			<ApprovalForm
 				accountOptions={data.accountOptions}
 				editRow={data.row}

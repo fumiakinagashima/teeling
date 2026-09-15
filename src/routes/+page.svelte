@@ -26,9 +26,9 @@
 
 	let filter = $state<'draft' | 'pending' | 'all'>('pending');
 
-	// 「自分が担当」の切り替えはcookieに記憶する。+page.server.tsのloadでSSR時点から
-	// 読み取ることで、localStorage経由（hydration後にしか反映できない）で起きる
-	// チラつきを避けている
+	// The "My items" toggle is remembered in a cookie. Reading it from the load function
+	// in +page.server.ts at SSR time avoids the flicker that would occur via localStorage
+	// (which only takes effect after hydration)
 	const MY_ONLY_COOKIE = 'teeling_top_my_only';
 
 	let myOnly = $state(data.myOnly);
@@ -102,47 +102,47 @@
 
 <div class="page">
 	<header class="page-header">
-		<h1>申請一覧</h1>
+		<h1>Requests</h1>
 		<div class="header-actions">
-				<a href="/approvals/new" class="btn-primary">+ 新規申請</a>
+				<a href="/approvals/new" class="btn-primary">+ New Request</a>
 		</div>
 	</header>
 
 	<div class="stats-row">
 		<div class="stat-card stat-pending">
 			<span class="stat-value">{pendingCount}</span>
-			<span class="stat-label">承認待ち</span>
+			<span class="stat-label">Pending</span>
 		</div>
 		<div class="stat-card stat-approved">
 			<span class="stat-value">{approvedThisMonth}</span>
-			<span class="stat-label">今月承認済</span>
+			<span class="stat-label">Approved this month</span>
 		</div>
 		<div class="stat-card stat-rejected">
 			<span class="stat-value">{rejectedThisMonth}</span>
-			<span class="stat-label">今月否決</span>
+			<span class="stat-label">Rejected this month</span>
 		</div>
 		<div class="stat-card stat-total">
 			<span class="stat-value">{data.rows.length}</span>
-			<span class="stat-label">総件数</span>
+			<span class="stat-label">Total</span>
 		</div>
 	</div>
 
 	<div class="filter-tabs">
 		<div class="tabs-left">
 			<button class="tab" class:active={filter === 'pending'} onclick={() => (filter = 'pending')}>
-				承認待ち
+				Pending
 				{#if pendingBadge > 0}<span class="tab-badge">{pendingBadge}</span>{/if}
 			</button>
 			<button class="tab" class:active={filter === 'draft'} onclick={() => (filter = 'draft')}>
-				作成中
+				Draft
 				{#if draftBadge > 0}<span class="tab-badge tab-badge-draft">{draftBadge}</span>{/if}
 			</button>
 			<button class="tab" class:active={filter === 'all'} onclick={() => (filter = 'all')}>
-				全件
+				All
 			</button>
 		</div>
 		<label class="toggle-label">
-			<span class="toggle-text">自分が担当</span>
+			<span class="toggle-text">My items</span>
 			<span class="toggle-switch" class:on={myOnly}>
 				<input
 					type="checkbox"
@@ -157,54 +157,54 @@
 
 	{#if data.rows.length === 0}
 		<div class="welcome-guide">
-			<h2 class="welcome-title">Teelingへようこそ</h2>
-			<p class="welcome-desc">AIと一緒に申請を作成し、承認サイクルを短縮しましょう。</p>
+			<h2 class="welcome-title">Welcome to Teeling</h2>
+			<p class="welcome-desc">Create requests together with AI and shorten your approval cycle.</p>
 			<div class="flow-steps">
 				<div class="flow-step">
 					<div class="flow-icon">💬</div>
 					<div class="flow-step-body">
-						<h3>AIと相談しながら申請を作成</h3>
-						<p>「出張申請を作って」と話しかけるだけ。AIが内容を整理して申請書を作成します。</p>
+						<h3>Create a request while consulting the AI</h3>
+						<p>Just say "create a business trip request." The AI organizes the details and drafts the request for you.</p>
 					</div>
 				</div>
 				<div class="flow-arrow">→</div>
 				<div class="flow-step">
 					<div class="flow-icon">🔍</div>
 					<div class="flow-step-body">
-						<h3>AIが申請内容をレビュー</h3>
-						<p>AIが問題点・改善点を指摘。承認者に回す前に内容を磨けます。</p>
+						<h3>AI reviews the request</h3>
+						<p>The AI points out issues and areas for improvement, so you can polish the content before it reaches the approver.</p>
 					</div>
 				</div>
 				<div class="flow-arrow">→</div>
 				<div class="flow-step">
 					<div class="flow-icon">📊</div>
 					<div class="flow-step-body">
-						<h3>判断材料を自動生成</h3>
-						<p>AIがROI・回収期間などの財務的判断材料を計算。承認者がすぐに判断できます。</p>
+						<h3>Decision-making data is generated automatically</h3>
+						<p>The AI calculates financial decision-making data such as ROI and payback period, so the approver can decide right away.</p>
 					</div>
 				</div>
 				<div class="flow-arrow">→</div>
 				<div class="flow-step">
 					<div class="flow-icon">✅</div>
 					<div class="flow-step-body">
-						<h3>承認・完了</h3>
-						<p>承認者が確認して承認。結果が申請者に即時通知されます。</p>
+						<h3>Approve and complete</h3>
+						<p>The approver reviews and approves it, and the result is instantly sent to the requester.</p>
 					</div>
 				</div>
 			</div>
-			<a href="/approvals/new" class="btn-primary">+ 最初の申請を作成する</a>
+			<a href="/approvals/new" class="btn-primary">+ Create your first request</a>
 		</div>
 	{:else if rows.length === 0}
 		<div class="empty">
 			{#if filter === 'pending'}
-				<p class="empty-title">承認待ちの申請はありません</p>
-				<p class="empty-desc">すべての申請が処理済みです。</p>
+				<p class="empty-title">No requests are pending approval</p>
+				<p class="empty-desc">All requests have been processed.</p>
 			{:else if filter === 'draft'}
-				<p class="empty-title">作成中の申請はありません</p>
-				<p class="empty-desc">下書き保存した申請がここに表示されます。</p>
+				<p class="empty-title">No draft requests</p>
+				<p class="empty-desc">Requests saved as drafts will appear here.</p>
 			{:else}
-				<p class="empty-title">担当中の申請はありません</p>
-				<p class="empty-desc">フィルターを変更するか、新規申請を作成してみましょう。</p>
+				<p class="empty-title">No requests assigned to you</p>
+				<p class="empty-desc">Try changing the filter or creating a new request.</p>
 			{/if}
 		</div>
 	{:else}
@@ -212,11 +212,11 @@
 			<table>
 				<thead>
 					<tr>
-						<th>タイトル</th>
-						<th>ステータス</th>
-						<th>現在の承認者</th>
-						<th>申請者</th>
-						<th>申請日</th>
+						<th>Title</th>
+						<th>Status</th>
+						<th>Current Approver</th>
+						<th>Requester</th>
+						<th>Date</th>
 					</tr>
 				</thead>
 				<tbody>

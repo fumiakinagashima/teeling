@@ -87,7 +87,7 @@
 	let error = $state('');
 
 	async function save() {
-		if (!name.trim()) { error = 'テンプレート名は必須です。'; return; }
+		if (!name.trim()) { error = 'Template name is required.'; return; }
 		saving = true;
 		error = '';
 		try {
@@ -121,7 +121,7 @@
 
 	async function deleteTemplate() {
 		if (!editRow) return;
-		if (!confirm('このテンプレートを削除しますか？')) return;
+		if (!confirm('Delete this template?')) return;
 		deleting = true;
 		try {
 			const res = await fetch(`/api/templates/${editRow.id}`, { method: 'DELETE' });
@@ -132,48 +132,48 @@
 	}
 
 	const FIELD_TYPE_LABELS: Record<string, string> = {
-		text: 'テキスト',
-		number: '数値',
-		date: '日付',
-		time: '時間'
+		text: 'Text',
+		number: 'Number',
+		date: 'Date',
+		time: 'Time'
 	};
 </script>
 
 <div class="form">
-	<!-- 基本情報 -->
+	<!-- Basic information -->
 	<section class="section">
-		<h3 class="section-title">基本情報</h3>
+		<h3 class="section-title">Basic information</h3>
 		<div class="field">
-			<label>テンプレート名 <span class="req">*</span></label>
-			<input type="text" bind:value={name} placeholder="例: 出張申請テンプレート" autofocus />
+			<label>Template name <span class="req">*</span></label>
+			<input type="text" bind:value={name} placeholder="e.g. Business trip request template" autofocus />
 		</div>
 		<div class="field">
-			<label>説明</label>
-			<textarea rows="2" bind:value={description} placeholder="このテンプレートの用途・説明"></textarea>
+			<label>Description</label>
+			<textarea rows="2" bind:value={description} placeholder="Purpose and description of this template"></textarea>
 		</div>
 	</section>
 
-	<!-- 本文ひな形 -->
+	<!-- Body template -->
 	<section class="section">
-		<h3 class="section-title">本文ひな形</h3>
+		<h3 class="section-title">Body template</h3>
 		<div class="field">
 			<textarea
 				class="body-format"
 				rows="6"
 				bind:value={bodyFormat}
-				placeholder="申請内容のひな形を入力（Markdown使用可）&#10;&#10;例:&#10;## 出張目的&#10;&#10;## 日程&#10;&#10;## 費用内訳"
+				placeholder="Enter a template for the request content (Markdown supported)&#10;&#10;Example:&#10;## Purpose of trip&#10;&#10;## Schedule&#10;&#10;## Cost breakdown"
 			></textarea>
 		</div>
 	</section>
 
-	<!-- カスタムフィールド -->
+	<!-- Custom fields -->
 	<section class="section">
 		<div class="section-head">
-			<h3 class="section-title">カスタムフィールド</h3>
-			<button type="button" class="btn-add" onclick={addField}>+ 追加</button>
+			<h3 class="section-title">Custom fields</h3>
+			<button type="button" class="btn-add" onclick={addField}>+ Add</button>
 		</div>
 		{#if customFields.length === 0}
-			<p class="empty-hint">フィールドを追加すると、申請フォームに入力欄が表示されます。</p>
+			<p class="empty-hint">Adding a field will show an input on the request form.</p>
 		{:else}
 			<div class="field-list">
 				{#each customFields as field, i}
@@ -182,7 +182,7 @@
 							type="text"
 							class="field-label-input"
 							bind:value={field.label}
-							placeholder="項目名（例: 金額）"
+							placeholder="Field name (e.g. Amount)"
 						/>
 						<select bind:value={field.type} class="field-type-select">
 							{#each Object.entries(FIELD_TYPE_LABELS) as [value, label]}
@@ -191,7 +191,7 @@
 						</select>
 						<label class="required-check">
 							<input type="checkbox" bind:checked={field.required} />
-							必須
+							Required
 						</label>
 						<button type="button" class="btn-remove" onclick={() => removeField(i)}>✕</button>
 					</div>
@@ -200,11 +200,11 @@
 		{/if}
 	</section>
 
-	<!-- デフォルト承認ルート（申請登録フォームと同じ操作性: Stepは自由入力・同じ番号で並列承認） -->
+	<!-- Default approval route (same UX as the request form: Step is free-form input, same number = parallel approval) -->
 	<section class="section">
 		<div class="field-header">
-			<label>デフォルト承認ルート</label>
-			<button type="button" class="btn-add-step" onclick={addStep}>+ 承認者追加</button>
+			<label>Default approval route</label>
+			<button type="button" class="btn-add-step" onclick={addStep}>+ Add approver</button>
 		</div>
 		<div class="route-list">
 			{#each routeEntries as entry, i}
@@ -214,15 +214,15 @@
 						<input type="number" class="step-num-input" bind:value={entry.step} min="1" />
 					</div>
 					<div class="sub-field sub-field-wide">
-						<label>承認者</label>
+						<label>Approver</label>
 						<select
 							class="account-select"
 							value={entry.accountId}
 							onchange={(e) => selectAccount(entry, (e.target as HTMLSelectElement).value)}
 						>
-							<option value="">— 承認者を選択 —</option>
+							<option value="">— Select an approver —</option>
 							{#each accountOptions as acc}
-								<option value={acc.id}>{acc.name}{acc.role ? `（${acc.role}）` : ''}</option>
+								<option value={acc.id}>{acc.name}{acc.role ? ` (${acc.role})` : ''}</option>
 							{/each}
 						</select>
 					</div>
@@ -232,7 +232,7 @@
 				</div>
 			{/each}
 		</div>
-		<p class="hint">同じStep番号にすると並列承認（AND）になります。申請作成時に自動で入力されます。</p>
+		<p class="hint">Using the same Step number makes it a parallel approval (AND). This is filled in automatically when a request is created.</p>
 	</section>
 
 	{#if error}
@@ -242,13 +242,13 @@
 	<div class="form-actions">
 		{#if editRow}
 			<button type="button" class="btn-delete" onclick={deleteTemplate} disabled={deleting}>
-				{deleting ? '削除中...' : '削除'}
+				{deleting ? 'Deleting...' : 'Delete'}
 			</button>
 		{/if}
 		<div class="actions-right">
-			<button type="button" class="btn-cancel" onclick={() => oncancel?.()}>キャンセル</button>
+			<button type="button" class="btn-cancel" onclick={() => oncancel?.()}>Cancel</button>
 			<button type="button" class="btn-save" onclick={save} disabled={saving}>
-				{saving ? '保存中...' : '保存'}
+				{saving ? 'Saving...' : 'Save'}
 			</button>
 		</div>
 	</div>
@@ -363,7 +363,7 @@
 		&:hover { color: var(--color-error); }
 	}
 
-	/* Route builder（申請登録フォームと同じスタイル） */
+	/* Route builder (same style as the request form) */
 	.route-list { display: flex; flex-direction: column; gap: 8px; }
 
 	.route-entry {

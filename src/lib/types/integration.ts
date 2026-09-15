@@ -1,3 +1,3 @@
-// authConfig の value / password 等の秘匿フィールドをクライアントに送る際のマスク値。
-// PATCH時にこの値が送られてきた場合は既存値を保持する（未変更として扱う）。
+// Mask value used when sending secret fields such as authConfig's value/password to the client.
+// If this value is sent back on PATCH, the existing value is kept (treated as unchanged).
 export const MASKED_SECRET = '********';

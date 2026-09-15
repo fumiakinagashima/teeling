@@ -17,12 +17,12 @@
 	type Props = {
 		contextTitle: string;
 		contextFields: { key: string; label: string }[];
-		// 詳細表示中のレコード。指示語「この顧客」等を解決できるようにする
+		// The record currently being viewed in detail. Lets the AI resolve references like "this customer"
 		recordContext?: RecordContext | null;
-		// 指定すると、AIが対応するフィールド（title/content）をフォームに直接入力できるようになる
+		// When set, the AI can fill the corresponding fields (title/content) directly into the form
 		onFormFill?: (fields: Record<string, string>) => void;
-		// このパネルがコンテンツ側の左（start）・右（end）どちらに置かれるか。
-		// リサイズハンドルの表示位置とドラッグ方向の符号を決める
+		// Whether this panel sits to the left (start) or right (end) of the content.
+		// Determines where the resize handle is shown and the sign of the drag direction
 		dockSide?: 'start' | 'end';
 	};
 
@@ -39,7 +39,7 @@
 	let chatLoading = $state(false);
 	let chatListEl = $state<HTMLElement | null>(null);
 
-	// AIアシスタント欄の幅（ドラッグでリサイズ可能。localStorageに記憶する）
+	// Width of the AI assistant panel (resizable by dragging; remembered in localStorage)
 	const CHAT_WIDTH_STORAGE_KEY = 'teeling_dialog_chat_width';
 	const CHAT_WIDTH_MIN = 260;
 	const CHAT_WIDTH_MAX = 560;
@@ -59,7 +59,7 @@
 	let chatWidth = $state(loadChatWidth());
 	let resizing = $state(false);
 
-	// 親のコンテンツ側（order未指定 = 0）を挟んで chat-side とハンドルを正しい順序に並べる
+	// Order chat-side and the handle correctly around the parent's content side (unspecified order = 0)
 	const chatOrder = $derived(dockSide === 'end' ? 2 : -1);
 	const handleOrder = $derived(dockSide === 'end' ? 1 : 0);
 
@@ -68,7 +68,7 @@
 		resizing = true;
 		const startX = e.clientX;
 		const startWidth = chatWidth;
-		// 左側に置かれている場合は右にドラッグするほど、右側の場合は左にドラッグするほど幅が広がる
+		// When docked on the left, dragging right widens it; when docked on the right, dragging left widens it
 		const sign = dockSide === 'end' ? -1 : 1;
 
 		function onMove(ev: PointerEvent) {
@@ -131,7 +131,7 @@
 			if (!res.ok || !res.body) {
 				chatMessages = [
 					...chatMessages.slice(0, -1),
-					{ role: 'assistant', text: 'エラーが発生しました。' }
+					{ role: 'assistant', text: 'An error occurred.' }
 				];
 				return;
 			}
@@ -182,14 +182,14 @@
 </script>
 
 <div class="chat-side" style:width="{chatWidth}px" style:order={chatOrder}>
-	<div class="chat-header">AI アシスタント</div>
+	<div class="chat-header">AI Assistant</div>
 	<div class="chat-messages" bind:this={chatListEl}>
 		{#if chatMessages.length === 0}
 			<p class="chat-empty">
 				{#if recordContext}
-					「{recordContext.label}」について質問できます（関連する案件・活動の集計など）。
+					You can ask questions about "{recordContext.label}" (e.g. related deal or activity summaries).
 				{:else}
-					ご質問・ご相談があればどうぞ。
+					Feel free to ask a question or share what's on your mind.
 				{/if}
 			</p>
 		{/if}
@@ -211,7 +211,7 @@
 		<textarea
 			bind:value={chatInput}
 			onkeydown={handleChatKey}
-			placeholder="質問・相談をどうぞ..."
+			placeholder="Ask a question..."
 			rows="2"
 			disabled={chatLoading}
 		></textarea>
@@ -219,14 +219,15 @@
 			class="chat-send"
 			onclick={sendChat}
 			disabled={chatLoading || !chatInput.trim()}
-			aria-label="送信"
+			aria-label="Send"
 		>
 			<ArrowUp size={14} />
 		</button>
 	</div>
 </div>
-<!-- ARIA Window Splitter パターン（https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter/）:
-     role="separator" + tabindex + キー操作は非対話要素向けのa11y-lintでは検出できない正しい組み合わせ -->
+<!-- ARIA Window Splitter pattern (https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter/):
+     role="separator" + tabindex + keyboard handling is a correct combination that a11y lint rules for
+     non-interactive elements can't detect -->
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
@@ -235,7 +236,7 @@
 	style:order={handleOrder}
 	role="separator"
 	aria-orientation="vertical"
-	aria-label="AIアシスタントの幅を調整"
+	aria-label="Adjust AI assistant panel width"
 	aria-valuenow={chatWidth}
 	aria-valuemin={CHAT_WIDTH_MIN}
 	aria-valuemax={CHAT_WIDTH_MAX}

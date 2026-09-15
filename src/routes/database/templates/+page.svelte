@@ -6,13 +6,13 @@
 
 <div class="page">
 	<div class="page-head">
-		<h1 class="page-title">申請テンプレート</h1>
-		<a class="btn-primary" href="/database/templates/new">+ 新規作成</a>
+		<h1 class="page-title">Request Templates</h1>
+		<a class="btn-primary" href="/database/templates/new">+ New Template</a>
 	</div>
 
 	{#if data.templates.length === 0}
 		<div class="empty">
-			<p>テンプレートはまだありません。</p>
+			<p>No templates yet.</p>
 		</div>
 	{:else}
 		<div class="card-grid">
@@ -24,10 +24,10 @@
 					{/if}
 					<div class="card-meta">
 						{#if t.customFields.length > 0}
-							<span class="card-chip">フィールド {t.customFields.length}件</span>
+							<span class="card-chip">{t.customFields.length} field{t.customFields.length === 1 ? '' : 's'}</span>
 						{/if}
 						{#if t.defaultRoute.length > 0}
-							<span class="card-chip">承認ルート {t.defaultRoute.length}ステップ</span>
+							<span class="card-chip">Approval route: {t.defaultRoute.length} step{t.defaultRoute.length === 1 ? '' : 's'}</span>
 						{/if}
 					</div>
 				</a>

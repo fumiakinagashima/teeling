@@ -145,7 +145,7 @@ export async function createApproval(db: Db, input: CreateApprovalInput): Promis
 	await db.insert(approvalRequests).values({
 		id,
 		title: input.title,
-		type: '申請',
+		type: 'request',
 		submittedBy: input.submittedByAccountId ?? '',
 		entityType: null,
 		entityId: null,
@@ -174,20 +174,20 @@ export async function updateApprovalStep(
 	comment?: string
 ): Promise<ApprovalRow> {
 	const existing = await getApproval(db, id);
-	if (!existing) throw new Error(`申請が見つかりません: ${id}`);
-	if (existing.status === 'cancelled') throw new Error('取り消し済みの申請は操作できません');
+	if (!existing) throw new Error(`Request not found: ${id}`);
+	if (existing.status === 'cancelled') throw new Error('Cannot operate on a cancelled request');
 
 	const route = [...existing.route];
-	if (stepIndex < 0 || stepIndex >= route.length) throw new Error(`ステップが存在しません: ${stepIndex}`);
+	if (stepIndex < 0 || stepIndex >= route.length) throw new Error(`Step does not exist: ${stepIndex}`);
 
 	const step = route[stepIndex];
 	if (step.accountId && step.accountId !== accountId) {
-		throw new Error('このステップを操作する権限がありません');
+		throw new Error('You do not have permission to perform this step');
 	}
 
 	const priorSteps = route.filter(s => s.step < step.step);
 	if (priorSteps.some(s => s.status !== 'approved')) {
-		throw new Error('前のステップが承認されていないため、このステップを操作できません');
+		throw new Error('Cannot perform this step because the previous step has not been approved');
 	}
 
 	route[stepIndex] = {
@@ -209,7 +209,7 @@ export async function updateApprovalStep(
 
 export async function cancelApproval(db: Db, id: string): Promise<ApprovalRow> {
 	const existing = await getApproval(db, id);
-	if (!existing) throw new Error(`申請が見つかりません: ${id}`);
+	if (!existing) throw new Error(`Request not found: ${id}`);
 
 	await db
 		.update(approvalRequests)
@@ -225,8 +225,8 @@ export async function deleteApproval(db: Db, id: string): Promise<void> {
 
 export async function returnApproval(db: Db, id: string, comment?: string): Promise<ApprovalRow> {
 	const existing = await getApproval(db, id);
-	if (!existing) throw new Error(`申請が見つかりません: ${id}`);
-	if (existing.status === 'cancelled') throw new Error('取り消し済みの申請は操作できません');
+	if (!existing) throw new Error(`Request not found: ${id}`);
+	if (existing.status === 'cancelled') throw new Error('Cannot operate on a cancelled request');
 
 	const route = existing.route.map(s => ({
 		...s,
@@ -258,8 +258,8 @@ type ContentInput = {
 
 export async function saveDraftApproval(db: Db, id: string, input: ContentInput): Promise<ApprovalRow> {
 	const existing = await getApproval(db, id);
-	if (!existing) throw new Error(`申請が見つかりません: ${id}`);
-	if (existing.status !== 'draft') throw new Error('作成中の申請のみ編集できます');
+	if (!existing) throw new Error(`Request not found: ${id}`);
+	if (existing.status !== 'draft') throw new Error('Only draft requests can be edited');
 
 	const newTitle = input.title ?? existing.title;
 	const newContent = input.content ?? existing.content;
@@ -292,8 +292,8 @@ export async function saveDraftApproval(db: Db, id: string, input: ContentInput)
 
 export async function updateApprovalContent(db: Db, id: string, input: ContentInput): Promise<ApprovalRow> {
 	const existing = await getApproval(db, id);
-	if (!existing) throw new Error(`申請が見つかりません: ${id}`);
-	if (existing.status !== 'draft') throw new Error('作成中の申請のみ再提出できます');
+	if (!existing) throw new Error(`Request not found: ${id}`);
+	if (existing.status !== 'draft') throw new Error('Only draft requests can be resubmitted');
 
 	const newTitle = input.title ?? existing.title;
 	const newContent = input.content ?? existing.content;

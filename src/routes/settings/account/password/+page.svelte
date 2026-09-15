@@ -15,11 +15,11 @@
 
 	async function changePassword() {
 		if (next !== confirm) {
-			error = '新しいパスワードが一致しません';
+			error = 'New passwords do not match';
 			return;
 		}
 		if (next.length < 8) {
-			error = 'パスワードは8文字以上で入力してください';
+			error = 'Password must be at least 8 characters';
 			return;
 		}
 		saving = true;
@@ -48,31 +48,31 @@
 </script>
 
 <div class="page">
-	<h1>設定</h1>
+	<h1>Settings</h1>
 	<nav class="subnav">
-		<a href="/settings">一般</a>
+		<a href="/settings">General</a>
 		{#if data.account.permission === 'admin'}
 			<a href="/settings/integrations">{m.integrations()}</a>
 			<a href="/settings/email">{m.email_settings()}</a>
 			<a href="/settings/ai">{m.ai_settings()}</a>
 		{/if}
-		<a href="/settings/account">プロフィール</a>
-		<a href="/settings/account/password" class="active">パスワード変更</a>
+		<a href="/settings/account">Profile</a>
+		<a href="/settings/account/password" class="active">Change Password</a>
 	</nav>
 
 	<section>
 		<div class="fields">
-			<Textbox label="現在のパスワード" type="password" bind:value={current} required />
-			<Textbox label="新しいパスワード" type="password" bind:value={next} required />
-			<Textbox label="新しいパスワード（確認）" type="password" bind:value={confirm} required />
+			<Textbox label="Current password" type="password" bind:value={current} required />
+			<Textbox label="New password" type="password" bind:value={next} required />
+			<Textbox label="New password (confirm)" type="password" bind:value={confirm} required />
 		</div>
 		<div class="actions">
 			<button
 				class="save-btn"
 				onclick={changePassword}
 				disabled={saving || !current || !next || !confirm}
-			>パスワードを変更</button>
-			{#if saved}<span class="saved">変更しました</span>{/if}
+			>Change Password</button>
+			{#if saved}<span class="saved">Changed</span>{/if}
 			{#if error}<span class="error">{error}</span>{/if}
 		</div>
 	</section>

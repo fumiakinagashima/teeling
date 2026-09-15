@@ -40,16 +40,16 @@
 </script>
 
 <div class="page">
-	<h1>設定</h1>
+	<h1>Settings</h1>
 	<nav class="subnav">
-		<a href="/settings">一般</a>
+		<a href="/settings">General</a>
 		{#if data.account.permission === 'admin'}
 			<a href="/settings/integrations">{m.integrations()}</a>
 			<a href="/settings/email">{m.email_settings()}</a>
 			<a href="/settings/ai">{m.ai_settings()}</a>
 		{/if}
-		<a href="/settings/account" class="active">プロフィール</a>
-		<a href="/settings/account/password">パスワード変更</a>
+		<a href="/settings/account" class="active">Profile</a>
+		<a href="/settings/account/password">Change Password</a>
 	</nav>
 
 	<section>
@@ -60,7 +60,7 @@
 			<div class="field">
 				<span class="field-label">{m.account_settings_permission()}</span>
 				<span class="perm-badge" class:perm-admin={data.account.permission === 'admin'}>
-					{data.account.permission === 'admin' ? '管理者' : '一般'}
+					{data.account.permission === 'admin' ? 'Admin' : 'General'}
 				</span>
 			</div>
 		</div>

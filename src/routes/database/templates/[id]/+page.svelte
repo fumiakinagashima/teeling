@@ -7,9 +7,9 @@
 	let { data }: { data: PageData } = $props();
 
 	const chatContextFields = [
-		{ key: 'name', label: 'テンプレート名' },
-		{ key: 'description', label: '説明' },
-		{ key: 'bodyFormat', label: '本文ひな形' }
+		{ key: 'name', label: 'Template name' },
+		{ key: 'description', label: 'Description' },
+		{ key: 'bodyFormat', label: 'Body template' }
 	];
 
 	let name = $state(data.row.name);
@@ -20,7 +20,7 @@
 <div class="page">
 	<div class="content-side">
 		<div class="content-inner">
-			<h1 class="page-title">テンプレートを編集</h1>
+			<h1 class="page-title">Edit Template</h1>
 			<TemplateForm
 				editRow={data.row}
 				accountOptions={data.accountOptions}

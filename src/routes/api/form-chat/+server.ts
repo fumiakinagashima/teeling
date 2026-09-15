@@ -28,7 +28,7 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 		formTitle: string;
 		formFields: { key: string; label: string }[];
 		history: { role: 'user' | 'assistant'; text: string }[];
-		// ダイアログに表示中のレコード（詳細表示時）。指示語「この顧客」等の解決に使う
+		// The record currently displayed in the dialog (when viewing details). Used to resolve references like "this customer"
 		recordContext?: {
 			type: string;
 			typeLabel: string;
@@ -36,11 +36,11 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 			label: string;
 			data?: Record<string, unknown>;
 		} | null;
-		// true の場合、AIが fill_form_fields ツールでフォームのフィールドに直接値を入力できるようにする
+		// If true, allows the AI to directly fill in form fields using the fill_form_fields tool
 		enableFormFill?: boolean;
 	};
 
-	// フォームに直接入力させてよいフィールドのみ許可する（承認ルート等の複雑な項目は対象外）
+	// Only allow fields that may be filled in directly (complex items such as the approval route are excluded)
 	const FORM_FILLABLE_KEYS = new Set(['title', 'content', 'name', 'description', 'bodyFormat']);
 	const fillableFields = body.enableFormFill
 		? body.formFields.filter((f) => FORM_FILLABLE_KEYS.has(f.key))
@@ -51,7 +51,7 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 			async start(controller) {
 				const enqueue = (e: StreamEvent) => controller.enqueue(new TextEncoder().encode(sse(e)));
 				await new Promise((r) => setTimeout(r, 300));
-				for (const char of 'ご質問ありがとうございます。') {
+				for (const char of 'Thank you for your question.') {
 					enqueue({ type: 'delta', text: char });
 					await new Promise((r) => setTimeout(r, 20));
 				}
@@ -79,7 +79,7 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 	};
 
 	const sections: string[] = [
-		'あなたは画面に開いているダイアログの内容についてユーザーをサポートするAIアシスタントです。'
+		'You are an AI assistant that helps the user with the content of the dialog currently open on screen.'
 	];
 
 	const rc = body.recordContext;
@@ -91,36 +91,36 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
 					.join('\n')
 			: '';
 		sections.push(
-			`現在ダイアログに表示中のレコード:
-- 種別: ${rc.typeLabel}（${rc.type}）
+			`Record currently displayed in the dialog:
+- Type: ${rc.typeLabel} (${rc.type})
 - ID: ${rc.id}
-- 名称: ${rc.label}${dataLines ? `\n- 表示中の内容:\n${dataLines}` : ''}
+- Name: ${rc.label}${dataLines ? `\n- Displayed content:\n${dataLines}` : ''}
 
-ユーザーが「この顧客」「この案件」「これ」などと指示語で言及した場合は、上記の表示中レコードを指します（どのレコードか聞き返す必要はありません）。
-関連する案件・活動・担当者などの一覧や集計が必要な場合は、上記のIDを使ってツールで取得・集計してください（例: この顧客に紐づく案件の合計金額は summarize_deals または search_deals の customer_id にこのIDを指定して求める）。`
+If the user refers to it with a pronoun such as "this customer", "this deal", or "this", they mean the record displayed above (you don't need to ask which record they mean).
+If you need a list or aggregation of related deals, activities, contacts, etc., fetch or aggregate them with a tool using the ID above (e.g., to find the total amount of deals linked to this customer, call summarize_deals or search_deals with this ID as the customer_id).`
 		);
 	}
 
 	if (body.formFields.length > 0) {
-		const fieldList = body.formFields.map((f) => `- ${f.label}（${f.key}）`).join('\n');
+		const fieldList = body.formFields.map((f) => `- ${f.label} (${f.key})`).join('\n');
 		sections.push(
-			`このダイアログは「${body.formTitle}」フォームです。ユーザーが各フィールドを正しく入力できるよう、具体的なアドバイスや情報を提供してください。
-フォームのフィールド一覧:
+			`This dialog is the "${body.formTitle}" form. Provide specific advice and information to help the user fill in each field correctly.
+List of form fields:
 ${fieldList}`
 		);
 	}
 
 	if (fillableFields.length > 0) {
 		sections.push(
-			`ユーザーが下書きの作成・内容の変更を依頼した場合は、チャットで文面を書き出すだけで終わらせず、必ず fill_form_fields ツールを使って該当するフィールドにその内容を直接入力してください。
-入力後は「〇〇を入力しました」等、何を反映したか簡潔に伝えてください。`
+			`If the user asks you to draft or change content, don't just write it out in the chat — always use the fill_form_fields tool to enter that content directly into the relevant field.
+After filling it in, briefly tell the user what you entered, e.g. "I've entered XX."`
 		);
 	}
 
 	sections.push(
-		`利用可能なツール: 顧客・案件・活動・担当者などの情報を検索・取得・集計できます。
-制約: データの登録・更新・削除・メール送信はできません（fill_form_fields によるフォーム入力を除く）。
-金額・日付・ステータスなどは日本語で分かりやすく示し、回答は簡潔にしてください。`
+		`Available tools: you can search, fetch, and aggregate information such as customers, deals, activities, and contacts.
+Constraints: you cannot create, update, or delete data, or send email (other than filling in the form via fill_form_fields).
+Present amounts, dates, statuses, etc. clearly, and keep your responses concise.`
 	);
 
 	const systemPrompt = sections.join('\n\n');
@@ -135,7 +135,7 @@ ${fieldList}`
 			? {
 					name: 'fill_form_fields',
 					description:
-						'開いているフォームのフィールドに値を直接入力する。ユーザーが依頼した下書き・内容をチャットで説明するのではなく、このツールでフォームへ反映すること。',
+						'Directly enter values into the fields of the open form. Rather than describing the draft/content the user requested in the chat, reflect it in the form using this tool.',
 					input_schema: {
 						type: 'object' as const,
 						properties: Object.fromEntries(
@@ -190,7 +190,7 @@ ${fieldList}`
 					const finalMsg = await claudeStream.finalMessage();
 					if (finalMsg.stop_reason !== 'tool_use') break;
 
-					// ツール呼び出しターン中のテキストはストリーム済みなのでそのまま継続
+					// The text during the tool-call turn has already been streamed, so just continue
 					const toolResults = await Promise.all(
 						toolBlocks.map(async (b) => {
 							try {
@@ -206,7 +206,7 @@ ${fieldList}`
 									return {
 										type: 'tool_result' as const,
 										tool_use_id: b.id,
-										content: 'フォームに反映しました。'
+										content: 'Updated the form.'
 									};
 								}
 								const result = await dispatchTool(db, b.name as never, input, toolEnv);
@@ -219,7 +219,7 @@ ${fieldList}`
 								return {
 									type: 'tool_result' as const,
 									tool_use_id: b.id,
-									content: `エラー: ${e instanceof Error ? e.message : String(e)}`,
+									content: `Error: ${e instanceof Error ? e.message : String(e)}`,
 									is_error: true
 								};
 							}

@@ -1,7 +1,7 @@
 import { tools } from '$lib/server/mcp';
 
-// 情報取得のみ許可するツール名のセット。フォーム入力サポート・ワークフロー構築サポートなど、
-// データの登録・更新・削除を行わせたくない補助チャットで共有する。
+// A set of tool names that only allow information retrieval. Shared by auxiliary chats — such as
+// form-input support or workflow-building support — where we don't want to allow creating, updating, or deleting data.
 export const READONLY_TOOL_NAMES = new Set([
 	'list_integrations',
 	'search_customers',

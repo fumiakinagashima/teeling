@@ -13,31 +13,31 @@ import { uploadR2 } from '../r2-service';
 import type { LinkContent, DocumentJobContent } from '$lib/types/chat';
 import type { ToolEnv } from './shared';
 
-// AIに公開するツール（旧・直接生成ツールは非公開化済み）
+// Tools exposed to the AI (the old direct-generation tools have been made private)
 export const tools: Tool[] = [
 	{
 		name: 'build_handoff_data',
 		description:
-			'DBから取得したデータをCSV/Markdownファイルに整形してR2に保存し、ダウンロードリンクと外部AIツール向けのプロンプトをセットで返す。「Excelにまとめて」「資料を作って」などの資料作成依頼に使う。事前に search_deals / get_customers / get_activities 等のツールでデータを取得し、その内容を tables に構成して渡す。',
+			'Formats data retrieved from the DB into a CSV/Markdown file, saves it to R2, and returns a download link together with a prompt for external AI tools. Used for document-creation requests like "put this together in Excel" or "make me a document." First retrieve the data with a tool such as search_deals / get_customers / get_activities, then structure that content into tables and pass it in.',
 		input_schema: {
 			type: 'object',
 			properties: {
 				filename: {
 					type: 'string',
-					description: 'ファイル名（拡張子なし。例: "2026年6月_案件一覧"）'
+					description: 'File name (without extension. e.g., "2026-06_deal_list")'
 				},
 				format: {
 					type: 'string',
 					enum: ['csv', 'markdown'],
-					description: 'csv: 表形式データ（Excel等で開く）/ markdown: 文章・複数テーブル混在に向く'
+					description: 'csv: tabular data (opened in Excel, etc.) / markdown: suited for prose mixed with multiple tables'
 				},
 				tables: {
 					type: 'array',
-					description: 'テーブルの配列（CSV形式の場合は複数テーブルを連結、Markdown形式の場合は ## 見出し区切り）',
+					description: 'Array of tables (in CSV format, multiple tables are concatenated; in Markdown format, they are separated by ## headings)',
 					items: {
 						type: 'object',
 						properties: {
-							title: { type: 'string', description: 'テーブルのタイトル（任意）' },
+							title: { type: 'string', description: 'Table title (optional)' },
 							columns: {
 								type: 'array',
 								items: {
@@ -48,7 +48,7 @@ export const tools: Tool[] = [
 							},
 							rows: {
 								type: 'array',
-								items: { type: 'object', description: '列キー: 値の組' }
+								items: { type: 'object', description: 'Key-value pairs using the column keys' }
 							}
 						},
 						required: ['columns', 'rows']
@@ -56,7 +56,7 @@ export const tools: Tool[] = [
 				},
 				prompt: {
 					type: 'string',
-					description: 'このデータファイルをCopilot/Canvas/ChatGPT等の外部AIツールに渡す際のプロンプト（日本語で、ユーザーがそのままコピペして使える内容にする）'
+					description: 'The prompt to use when handing this data file to an external AI tool such as Copilot/Canvas/ChatGPT (write it so the user can copy and paste it as-is)'
 				}
 			},
 			required: ['filename', 'format', 'tables', 'prompt']
@@ -64,46 +64,46 @@ export const tools: Tool[] = [
 	}
 ];
 
-// 旧・直接生成ツール（コードは残存。AIには非公開）
+// Old direct-generation tools (code retained but not exposed to the AI)
 const _legacyTools: Tool[] = [
 	{
 		name: 'create_word_document',
 		description:
-			'見出し・段落・表からWord文書（.docx）を生成し、ダウンロードリンクを返す。社内向けの報告書・議事録など文章中心の資料に向く。「営業会議資料をWordで作って」などに使う。事前に summarize_deals / get_deals / search_deals / get_customer_detail 等で必要なデータを取得・集計してから、その内容を blocks に構成して渡す。',
+			'Generates a Word document (.docx) from headings, paragraphs, and tables, and returns a download link. Suited for text-centric internal materials such as reports and meeting minutes. Used for requests like "make me the sales meeting materials in Word." First retrieve and aggregate the necessary data with summarize_deals / get_deals / search_deals / get_customer_detail, etc., then structure that content into blocks and pass it in.',
 		input_schema: {
 			type: 'object',
 			properties: {
 				filename: {
 					type: 'string',
-					description: 'ファイル名（拡張子なし。例: "2026年6月_営業会議資料"）'
+					description: 'File name (without extension. e.g., "2026-06_sales_meeting_materials")'
 				},
 				title: {
 					type: 'string',
-					description: '文書タイトル（任意。文書冒頭に大きく表示される）'
+					description: 'Document title (optional; displayed prominently at the top of the document)'
 				},
 				blocks: {
 					type: 'array',
-					description: '文書の内容を順番に並べたブロックの配列',
+					description: 'Array of blocks listing the document content in order',
 					items: {
 						type: 'object',
 						properties: {
 							type: {
 								type: 'string',
 								enum: ['heading', 'paragraph', 'table'],
-								description: 'ブロック種別'
+								description: 'Block type'
 							},
 							level: {
 								type: 'number',
 								enum: [1, 2, 3],
-								description: 'type が heading のときの見出しレベル（省略時1）'
+								description: 'Heading level when type is heading (defaults to 1 if omitted)'
 							},
 							text: {
 								type: 'string',
-								description: 'type が heading / paragraph のときの本文テキスト'
+								description: 'Body text when type is heading / paragraph'
 							},
 							columns: {
 								type: 'array',
-								description: 'type が table のときの列定義',
+								description: 'Column definitions when type is table',
 								items: {
 									type: 'object',
 									properties: { key: { type: 'string' }, label: { type: 'string' } },
@@ -113,8 +113,8 @@ const _legacyTools: Tool[] = [
 							rows: {
 								type: 'array',
 								description:
-									'type が table のときの行データ（columns の key をキーとするオブジェクトの配列）',
-								items: { type: 'object', description: '列キー: 値の組' }
+									"Row data when type is table (array of objects keyed by the columns' keys)",
+								items: { type: 'object', description: 'Key-value pairs using the column keys' }
 							}
 						},
 						required: ['type']
@@ -127,38 +127,38 @@ const _legacyTools: Tool[] = [
 	{
 		name: 'create_excel_workbook',
 		description:
-			'シート・列・行データからExcelファイル（.xlsx）を生成し、ダウンロードリンクを返す。案件一覧・集計表など表形式データに向く。「案件状況をExcelでまとめて」などに使う。事前に summarize_deals / get_deals / search_deals 等で必要なデータを取得・集計してから、その内容を sheets に構成して渡す。',
+			'Generates an Excel file (.xlsx) from sheets, columns, and row data, and returns a download link. Suited for tabular data such as deal lists and summary tables. Used for requests like "put the deal status together in Excel." First retrieve and aggregate the necessary data with summarize_deals / get_deals / search_deals, etc., then structure that content into sheets and pass it in.',
 		input_schema: {
 			type: 'object',
 			properties: {
 				filename: {
 					type: 'string',
-					description: 'ファイル名（拡張子なし。例: "2026年6月_案件一覧"）'
+					description: 'File name (without extension. e.g., "2026-06_deal_list")'
 				},
 				sheets: {
 					type: 'array',
-					description: 'シートの配列',
+					description: 'Array of sheets',
 					items: {
 						type: 'object',
 						properties: {
-							name: { type: 'string', description: 'シート名' },
+							name: { type: 'string', description: 'Sheet name' },
 							columns: {
 								type: 'array',
-								description: '列定義（表示順）',
+								description: 'Column definitions (in display order)',
 								items: {
 									type: 'object',
 									properties: {
 										key: { type: 'string' },
 										label: { type: 'string' },
-										width: { type: 'number', description: '列幅（任意）' }
+										width: { type: 'number', description: 'Column width (optional)' }
 									},
 									required: ['key', 'label']
 								}
 							},
 							rows: {
 								type: 'array',
-								description: '行データ（columns の key をキーとするオブジェクトの配列）',
-								items: { type: 'object', description: '列キー: 値の組' }
+								description: "Row data (array of objects keyed by the columns' keys)",
+								items: { type: 'object', description: 'Key-value pairs using the column keys' }
 							}
 						},
 						required: ['name', 'columns', 'rows']
@@ -171,30 +171,30 @@ const _legacyTools: Tool[] = [
 	{
 		name: 'create_powerpoint_presentation',
 		description:
-			'タイトル・本文・表からPowerPointプレゼンテーション（.pptx）を生成し、ダウンロードリンクを返す。会議・プレゼン用のスライド資料に向く。「営業会議用にスライドを作って」などに使う。事前に summarize_deals / get_deals / search_deals 等で必要なデータを取得・集計してから、その内容を slides に構成して渡す。',
+			'Generates a PowerPoint presentation (.pptx) from titles, body text, and tables, and returns a download link. Suited for slide decks for meetings and presentations. Used for requests like "make slides for the sales meeting." First retrieve and aggregate the necessary data with summarize_deals / get_deals / search_deals, etc., then structure that content into slides and pass it in.',
 		input_schema: {
 			type: 'object',
 			properties: {
 				filename: {
 					type: 'string',
-					description: 'ファイル名（拡張子なし。例: "2026年6月_営業会議"）'
+					description: 'File name (without extension. e.g., "2026-06_sales_meeting")'
 				},
-				title: { type: 'string', description: '表紙スライドのタイトル（任意）' },
+				title: { type: 'string', description: 'Cover slide title (optional)' },
 				slides: {
 					type: 'array',
-					description: 'スライドの配列（表紙の後に1スライドずつ追加される）',
+					description: 'Array of slides (each one is added after the cover slide)',
 					items: {
 						type: 'object',
 						properties: {
-							title: { type: 'string', description: 'スライドタイトル（任意）' },
+							title: { type: 'string', description: 'Slide title (optional)' },
 							body: {
 								type: 'array',
 								items: { type: 'string' },
-								description: '箇条書き本文（任意）'
+								description: 'Bullet-point body text (optional)'
 							},
 							table: {
 								type: 'object',
-								description: '表（任意）',
+								description: 'Table (optional)',
 								properties: {
 									columns: {
 										type: 'array',
@@ -209,7 +209,7 @@ const _legacyTools: Tool[] = [
 									},
 									rows: {
 										type: 'array',
-										items: { type: 'object', description: '列キー: 値の組' }
+										items: { type: 'object', description: 'Key-value pairs using the column keys' }
 									}
 								}
 							}
@@ -272,7 +272,7 @@ function tablesToMarkdown(tables: z.infer<typeof handoffTableSchema>[]): string 
 }
 
 export async function handleBuildHandoffData(input: unknown, env?: ToolEnv) {
-	if (!env?.R2) throw new Error('R2が設定されていないためデータファイルを保存できません');
+	if (!env?.R2) throw new Error('R2 is not configured, so the data file cannot be saved');
 	const { filename, format, tables, prompt } = buildHandoffDataSchema.parse(input);
 
 	const ext = format === 'csv' ? 'csv' : 'md';
@@ -290,7 +290,7 @@ export async function handleBuildHandoffData(input: unknown, env?: ToolEnv) {
 	return { type: 'doc_handoff', downloadUrl, filename: fullFilename, label, prompt };
 }
 
-// --- 旧ツール Zod スキーマ ---
+// --- Legacy tool Zod schemas ---
 
 const documentTableSchema = z.object({
 	columns: z.array(z.object({ key: z.string(), label: z.string() })),
@@ -356,7 +356,7 @@ async function runDocumentJob(
 	label: string,
 	generate: () => Promise<LinkContent>
 ): Promise<DocumentJobContent> {
-	if (!env.KV) throw new Error('KVが設定されていないため資料生成のジョブを管理できません');
+	if (!env.KV) throw new Error('KV is not configured, so the document-generation job cannot be managed');
 	const kv = env.KV;
 	const jobId = crypto.randomUUID();
 
@@ -372,10 +372,10 @@ async function runDocumentJob(
 			if (env.accountId) {
 				await createNotification(db, {
 					type: 'document_job',
-					title: `「${label}」の生成が完了しました`,
-					body: `「${label}」のダウンロード準備ができました。`,
+					title: `Generation of "${label}" is complete`,
+					body: `"${label}" is ready to download.`,
 					seedContent: [
-						{ type: 'text', text: `資料「${label}」の生成が完了しました。` },
+						{ type: 'text', text: `The document "${label}" has finished generating.` },
 						{ type: 'link', label: result.label, href: result.href, description: result.description }
 					],
 					accountId: env.accountId
@@ -387,10 +387,10 @@ async function runDocumentJob(
 			if (env.accountId) {
 				await createNotification(db, {
 					type: 'document_job',
-					title: `「${label}」の生成に失敗しました`,
+					title: `Failed to generate "${label}"`,
 					body: message,
 					seedContent: [
-						{ type: 'text', text: `資料「${label}」の生成に失敗しました: ${message}` }
+						{ type: 'text', text: `Failed to generate the document "${label}": ${message}` }
 					],
 					accountId: env.accountId
 				});
@@ -413,7 +413,7 @@ export async function handleCreateWordDocument(
 	env?: ToolEnv,
 	ctx?: ExecutionContext
 ) {
-	if (!env?.R2) throw new Error('R2が設定されていないため資料を生成できません');
+	if (!env?.R2) throw new Error('R2 is not configured, so the document cannot be generated');
 	const r2 = env.R2;
 	const { filename, title, blocks } = createWordDocumentSchema.parse(input);
 	const label = `${filename}.docx`;
@@ -430,7 +430,7 @@ export async function handleCreateExcelWorkbook(
 	env?: ToolEnv,
 	ctx?: ExecutionContext
 ) {
-	if (!env?.R2) throw new Error('R2が設定されていないため資料を生成できません');
+	if (!env?.R2) throw new Error('R2 is not configured, so the document cannot be generated');
 	const r2 = env.R2;
 	const { filename, sheets } = createExcelWorkbookSchema.parse(input);
 	const label = `${filename}.xlsx`;
@@ -447,7 +447,7 @@ export async function handleCreatePowerpointPresentation(
 	env?: ToolEnv,
 	ctx?: ExecutionContext
 ) {
-	if (!env?.R2) throw new Error('R2が設定されていないため資料を生成できません');
+	if (!env?.R2) throw new Error('R2 is not configured, so the document cannot be generated');
 	const r2 = env.R2;
 	const { filename, title, slides } = createPowerpointPresentationSchema.parse(input);
 	const label = `${filename}.pptx`;

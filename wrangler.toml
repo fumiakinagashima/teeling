@@ -5,33 +5,35 @@ compatibility_flags = ["nodejs_compat"]
 main = "worker.ts"
 assets = { directory = ".svelte-kit/cloudflare/", binding = "ASSETS" }
 
-# リマインダー配信: pending な reminders を1分ごとにチェック
-# 承認待ちサマリー: 毎週月曜 0:00 UTC (9:00 JST) に承認担当者へ配信
+# Reminder delivery: checks for pending reminders every minute.
 [triggers]
-crons = ["* * * * *", "0 0 * * 1"]
+crons = ["* * * * *"]
 
 [[d1_databases]]
 binding = "DB"
 database_name = "teeling"
-database_id = "b2006c75-6104-4a22-b4e8-7cae37fe80a4"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
 migrations_dir = "drizzle"
 
 [[kv_namespaces]]
 binding = "KV"
-id = "198498033a0b4c69b9b2f4220feaf66e"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
 
 [[r2_buckets]]
 binding = "R2"
 bucket_name = "teeling"
 
 [vars]
-# ANTHROPIC_API_KEY は `wrangler secret put ANTHROPIC_API_KEY` で管理する（[vars] に書くと deploy 時にシークレットを空文字で上書きしてしまうため定義しない）
-# ローカル開発時のモックモード（.dev.vars で上書き可能）
+# ANTHROPIC_API_KEY is managed via `wrangler secret put ANTHROPIC_API_KEY` (not defined
+# here in [vars], since that would overwrite the secret with an empty string on deploy).
+# Mock AI mode for local development (can be overridden via .dev.vars).
 MOCK_AI = "false"
 
-# ローカル開発 (`bun dev` = vite dev の platformProxy、svelte.config.js で environment = "local" を指定) 用。
-# 名前付き environment の d1_databases/kv_namespaces/r2_buckets は上位の設定を継承しないため全項目を再定義している。
-# database_id/id はダミー値でよく、.wrangler/state にローカル用のD1/KVが作成される（本番の実IDとは分離される）。
+# Used for local development (`bun dev` = vite dev's platformProxy; svelte.config.js sets
+# environment = "local"). Named environments don't inherit d1_databases/kv_namespaces/
+# r2_buckets from the top level, so every field is redefined here.
+# database_id/id can be dummy values; local D1/KV are created under .wrangler/state,
+# fully separate from the real production IDs above.
 [[env.local.d1_databases]]
 binding = "DB"
 database_name = "teeling"

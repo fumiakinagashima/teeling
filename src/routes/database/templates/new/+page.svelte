@@ -7,9 +7,9 @@
 	let { data }: { data: PageData } = $props();
 
 	const chatContextFields = [
-		{ key: 'name', label: 'テンプレート名' },
-		{ key: 'description', label: '説明' },
-		{ key: 'bodyFormat', label: '本文ひな形' }
+		{ key: 'name', label: 'Template name' },
+		{ key: 'description', label: 'Description' },
+		{ key: 'bodyFormat', label: 'Body template' }
 	];
 
 	let name = $state('');
@@ -20,7 +20,7 @@
 <div class="page">
 	<div class="content-side">
 		<div class="content-inner">
-			<h1 class="page-title">テンプレートを作成</h1>
+			<h1 class="page-title">Create Template</h1>
 			<TemplateForm
 				accountOptions={data.accountOptions}
 				bind:name
@@ -33,7 +33,7 @@
 	</div>
 	<DialogChatSide
 		dockSide="end"
-		contextTitle="テンプレートを作成"
+		contextTitle="Create Template"
 		contextFields={chatContextFields}
 		onFormFill={(fields) => {
 			if (fields.name !== undefined) name = fields.name;
